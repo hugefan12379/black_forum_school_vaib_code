@@ -1,0 +1,29 @@
+{% extends "forum/base.html" %}
+{% block title %}Форум{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>📝 Форум</h2>
+    <a href="/forum/create/" class="btn btn-primary">➕ Новый пост</a>
+</div>
+
+{% if posts %}
+    <div class="row">
+        {% for post in posts %}
+        <div class="col-md-6 mb-3">
+            <div class="card p-3">
+                <h5>{{ post.title }}</h5>
+                <p class="text-muted">
+                    {{ post.text|truncatechars:120 }}
+                </p>
+                <a href="/forum/post/{{ post.id }}/" class="btn btn-sm btn-outline-light">
+                    Читать →
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <p class="text-muted">Постов пока нет 😢</p>
+{% endif %}
+{% endblock %}

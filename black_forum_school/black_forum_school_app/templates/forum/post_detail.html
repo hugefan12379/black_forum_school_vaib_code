@@ -1,0 +1,19 @@
+@login_required
+def forum_post_detail(request, post_id):
+    post = get_object_or_404(ForumPost, id=post_id, is_visible=True)
+    comments = post.comments.order_by("created_at")
+
+    if request.method == "POST":
+        text = request.POST.get("text")
+        if text:
+            ForumComment.objects.create(
+                post=post,
+                author=request.user,
+                text=text
+            )
+        return redirect("forum_post_detail", post_id=post.id)
+
+    return render(request, "forum/post_detail.html", {
+        "post": post,
+        "comments": comments
+    })

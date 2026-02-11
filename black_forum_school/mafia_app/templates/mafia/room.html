@@ -1,0 +1,742 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Комната {{ room.room_number }} — Мафия</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+
+    #chatInput {
+      color: #000 !important;
+      background: #fff !important;
+    }
+
+    #chatInput::placeholder {
+      color: #666 !important;
+    }
+
+    body {
+      background: radial-gradient(1200px 600px at 20% 0%, #2a3446 0%, #151a22 55%, #0f1218 100%);
+      color: #fff;
+    }
+
+    .card {
+      background: rgba(45, 52, 66, 0.92);
+      border: 1px solid rgba(180, 200, 255, 0.18);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      border-radius: 14px;
+    }
+
+    /* ВСЁ белое */
+    .muted,
+    .chat-time,
+    .role-pill,
+    .card,
+    .card * {
+      color: #ffffff !important;
+    }
+
+    .badge-phase { font-size: 14px; }
+
+    .player-item {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:10px 12px;
+      border-bottom:1px solid rgba(255,255,255,0.10);
+    }
+    .player-item:last-child { border-bottom:none; }
+
+    .alive { color:#6dff8b !important; font-weight:700; }
+    .dead { color:#ff6b6b !important; font-weight:700; }
+
+    .role-pill {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(80, 120, 255, 0.18);
+      border: 1px solid rgba(80, 120, 255, 0.35);
+    }
+
+    .guide-item {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.16);
+      margin-bottom: 10px;
+    }
+
+    .guide-title {
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .chat-box {
+      height: 260px;
+      overflow-y: auto;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .chat-line {
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .glow {
+      box-shadow: 0 0 0 1px rgba(120, 150, 255, 0.15), 0 10px 30px rgba(50, 90, 255, 0.12);
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container py-4">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h3 class="mb-0">🕵️ Комната {{ room.room_number }}</h3>
+      <div class="muted">
+        Ведущий: <span id="hostName">—</span>
+      </div>
+    </div>
+
+    <div class="text-end">
+      <a href="/mafia/" class="btn btn-outline-light btn-sm">← Назад к комнатам</a>
+    </div>
+  </div>
+
+  <div class="row g-3">
+
+    <!-- LEFT -->
+    <div class="col-lg-7">
+
+      <!-- STATUS -->
+      <div class="card p-3 mb-3 glow">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="muted">Статус игры</div>
+            <div class="mt-1">
+              <span id="gameStartedBadge" class="badge bg-secondary">Игра не началась</span>
+              <span id="phaseBadge" class="badge bg-dark badge-phase ms-2">лобби</span>
+            </div>
+            <div class="muted mt-1">
+              День: <span id="dayNumber">0</span> • Ночь: <span id="nightNumber">0</span>
+              <button id="btnDoAction" class="btn btn-dark text-dark">🎯 Действовать</button>
+
+            </div>
+          </div>
+
+          <div class="text-end">
+            <div class="muted">Твоя роль</div>
+            <div id="myRole" class="fw-bold">—</div>
+          </div>
+        </div>
+
+        <hr class="border-secondary">
+
+        <div class="d-flex flex-wrap gap-2">
+          <button id="btnJoin" class="btn btn-success">Войти</button>
+          <button id="btnLeave" class="btn btn-danger">Выйти</button>
+          <button id="btnBecomeHost" class="btn btn-warning">Стать ведущим</button>
+          <button id="btnStartGame" class="btn btn-primary">Начать игру</button>
+          <button id="btnSetDay" class="btn btn-outline-info">День</button>
+          <button id="btnSetNight" class="btn btn-outline-info">Ночь</button>
+        </div>
+
+        <!-- ДНЕВНОЕ ГОЛОСОВАНИЕ -->
+        <div class="mt-3">
+          <div class="d-flex flex-wrap gap-2">
+            <button id="btnStartDayVote" class="btn btn-dark">🗳 Запустить голосование (день)</button>
+          </div>
+          <div class="mt-2">
+            <span class="muted">Дедлайн голосования:</span>
+            <span id="dayVoteDeadlineText">—</span>
+          </div>
+        </div>
+
+        <div id="statusText" class="mt-3 muted">Загрузка...</div>
+      </div>
+
+      <div class="mt-2 muted">
+        ⏳ Таймер хода: <b id="turnTimer">—</b>
+      </div>
+
+      <div class="mt-1 muted">
+        🎭 Сейчас ходит: <b id="turnRoleText">—</b>
+      </div>
+
+      <div class="mt-2 muted">
+        🗳️ Дедлайн голосования: <b id="dayVoteTimer">—</b>
+      </div>
+
+      <!-- PLAYERS -->
+      <div class="card p-3 mb-3">
+        <h5 class="mb-2">👥 Игроки</h5>
+        <div id="playersList" class="mt-2"></div>
+        <div class="muted mt-2">
+          Всего: <span id="playersCount">0</span>
+        </div>
+      </div>
+
+      <!-- CHAT -->
+      <div class="card p-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="mb-0">💬 Чат</h5>
+          <span class="muted" style="font-size: 12px;">(виден днём)</span>
+        </div>
+
+        <div id="chatBox" class="chat-box">
+          <div class="muted">Загрузка чата...</div>
+        </div>
+
+        <div class="d-flex gap-2 mt-2">
+          <input id="chatInput" class="form-control" placeholder="Напиши сообщение...">
+          <button id="chatSendBtn" class="btn btn-dark">Отправить</button>
+        </div>
+
+        <div id="chatStatus" class="muted mt-2" style="font-size: 12px;"></div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT -->
+    <div class="col-lg-5">
+
+      <!-- ROLE GUIDES -->
+      <div class="card p-3 mb-3">
+        <h5 class="mb-2">📌 Гайды по ролям</h5>
+
+        <div class="guide-item">
+          <div class="guide-title">🙂 Мирный</div>
+          <div class="muted">Голосует днём.</div>
+        </div>
+
+        <div class="guide-item">
+          <div class="guide-title">💉 Доктор</div>
+          <div class="muted">Ночью лечит игрока.</div>
+        </div>
+
+        <div class="guide-item">
+          <div class="guide-title">🕵️ Шериф</div>
+          <div class="muted">Проверяет игрока.</div>
+        </div>
+
+        <div class="guide-item">
+          <div class="guide-title">🔫 Мафия</div>
+          <div class="muted">Ночью выбирает жертву.</div>
+        </div>
+
+        <div class="guide-item">
+          <div class="guide-title">💋 Красотка</div>
+          <div class="muted">Ночью блокирует игрока.</div>
+        </div>
+
+        <div class="guide-item">
+          <div class="guide-title">🔪 Маньяк</div>
+          <div class="muted">Убивает ночью.</div>
+        </div>
+      </div>
+
+      <!-- QUICK HELP -->
+      <div class="card p-3">
+        <h5 class="mb-2">⚡ Быстрые подсказки</h5>
+        <ul class="muted mb-0">
+          <li>Минимум 5 игроков для старта</li>
+          <li>После старта выход запрещён</li>
+          <li>Роли скрыты (кроме ведущего)</li>
+          <li>Чат виден только днём</li>
+        </ul>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+  let selectedTargetId = null;
+let selectedMode = null; 
+// "night_action" или "day_vote"
+  let currentPhase = "lobby";
+let myRoleRaw = null;
+let myTurnRole = null;
+let dayVoteActive = false;
+
+  const ROOM_NUMBER = {{ room.room_number }};
+  const PING_URL = `/mafia/room/${ROOM_NUMBER}/ping/`;
+  let lastWinnerText = "";
+
+  const STATE_URL = `/mafia/room/${ROOM_NUMBER}/state/`;
+  const JOIN_URL = `/mafia/room/${ROOM_NUMBER}/join/`;
+  const LEAVE_URL = `/mafia/room/${ROOM_NUMBER}/leave/`;
+  const BECOME_HOST_URL = `/mafia/room/${ROOM_NUMBER}/become-host/`;
+  const START_URL = `/mafia/room/${ROOM_NUMBER}/start/`;
+  const CHAT_LIST_URL = `/mafia/room/${ROOM_NUMBER}/chat/list/`;
+  const CHAT_SEND_URL = `/mafia/room/${ROOM_NUMBER}/chat/send/`;
+  const PHASE_SET_URL = `/mafia/room/${ROOM_NUMBER}/phase/set/`;
+
+  const DAY_VOTE_START_URL = `/mafia/room/${ROOM_NUMBER}/day-vote/start/`;
+  const DAY_VOTE_CAST_URL = `/mafia/room/${ROOM_NUMBER}/day-vote/cast/`;
+
+  
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+      const cookies = document.cookie.split(";");
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + "=")) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  const csrftoken = getCookie("csrftoken");
+
+  async function post(url, formData=null) {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "X-CSRFToken": csrftoken },
+      body: formData
+    });
+    return await res.json();
+  }
+
+  function phaseLabel(phase) {
+    if (phase === "lobby") return "лобби";
+    if (phase === "night") return "ночь";
+    if (phase === "day") return "день";
+    return phase || "—";
+  }
+
+  function roleLabel(role) {
+    if (!role) return "—";
+    const map = {
+      "host": "🎤 Ведущий",
+      "civil": "🙂 Мирный",
+      "doctor": "💉 Доктор",
+      "sheriff": "🕵️ Шериф",
+      "mafia": "🔫 Мафия",
+      "boss": "💋 Красотка",
+      "maniac": "🔪 Маньяк"
+    };
+    return map[role] || role;
+  }
+
+  function fmtDeadline(iso) {
+    if (!iso) return "—";
+    try {
+      const d = new Date(iso);
+      return d.toLocaleTimeString("ru-RU");
+    } catch {
+      return "—";
+    }
+  }
+
+  function renderPlayers(players) {
+  const list = document.getElementById("playersList");
+  list.innerHTML = "";
+
+  if (!players || players.length === 0) {
+    list.innerHTML = `<div class="muted">Пока никого нет</div>`;
+    return;
+  }
+
+  players.forEach(p => {
+    const row = document.createElement("div");
+    row.className = "player-item";
+
+    // подсветка выбранного игрока
+    if (selectedTargetId === p.id) {
+      row.style.background = "rgba(255,255,255,0.12)";
+      row.style.borderRadius = "10px";
+    }
+
+    const left = document.createElement("div");
+    left.innerHTML = `
+      <div class="fw-semibold">
+        <span title="${p.full_name || p.name}" style="cursor: help;">
+          ${p.name}
+        </span>
+        ${p.is_host ? `<span class="badge bg-warning text-dark ms-2">Ведущий</span>` : ""}
+      </div>
+      <div class="muted" style="font-size: 13px;">
+        ${p.is_alive ? `<span class="alive">жив</span>` : `<span class="dead">мёртв</span>`}
+      </div>
+    `;
+
+    const right = document.createElement("div");
+
+    // голоса (если есть)
+    const votesCount = (window.dayVotes && window.dayVotes[p.id]) ? window.dayVotes[p.id] : 0;
+    const votesText = document.createElement("div");
+    votesText.style.fontSize = "12px";
+    votesText.className = "muted";
+    votesText.innerText = `Голоса: ${votesCount}`;
+    right.appendChild(votesText);
+
+    // кнопка выбора
+    const btnPick = document.createElement("button");
+    btnPick.className = "btn btn-sm btn-outline-light mt-1";
+    btnPick.innerText = "Выбрать";
+    btnPick.disabled = !p.is_alive;
+
+    btnPick.addEventListener("click", () => {
+      selectedTargetId = p.id;
+      renderPlayers(players);
+    });
+
+    right.appendChild(btnPick);
+
+    row.appendChild(left);
+    row.appendChild(right);
+    list.appendChild(row);
+  });
+}
+
+
+
+  async function castDayVote(targetId) {
+    const form = new FormData();
+    form.append("target_id", targetId);
+
+    const r = await post(DAY_VOTE_CAST_URL, form);
+    if (r.status !== "success") {
+      alert(r.message || "Ошибка голосования");
+      return;
+    }
+    alert("Голос принят ✅");
+  }
+
+  function secondsLeft(isoDeadline) {
+    if (!isoDeadline) return null;
+    const t = new Date(isoDeadline).getTime();
+    const now = Date.now();
+    const diff = Math.floor((t - now) / 1000);
+    return diff;
+  }
+
+  function formatSeconds(sec) {
+    if (sec === null) return "—";
+    if (sec <= 0) return "0 сек";
+    return `${sec} сек`;
+  }
+
+  function turnRoleLabel(role) {
+    const map = {
+      "boss": "💋 Красотка",
+      "doctor": "💉 Доктор",
+      "sheriff": "🕵️ Шериф",
+      "mafia": "🔫 Мафия",
+      "maniac": "🔪 Маньяк",
+    };
+    return map[role] || (role || "—");
+  }
+
+  async function loadState() {
+  try {
+    const res = await fetch(STATE_URL);
+    const json = await res.json();
+
+    if (json.status !== "success") {
+      document.getElementById("statusText").innerText = "Ошибка состояния";
+      return;
+    }
+
+    // мой id (ОБЯЗАТЕЛЬНО сверху!)
+    const myId = {{ request.user.id }};
+
+    // обновляем глобальные переменные для кнопки "Действовать"
+    currentPhase = json.phase;
+    myTurnRole = json.turn_role;
+    dayVoteActive = !!json.day_vote_deadline;
+
+    // базовые поля
+    document.getElementById("playersCount").innerText = json.count ?? 0;
+    document.getElementById("dayNumber").innerText = json.day_number ?? 0;
+    document.getElementById("nightNumber").innerText = json.night_number ?? 0;
+
+    // ведущий
+    let hostName = "нет";
+    const host = (json.players || []).find(p => p.is_host);
+    if (host) hostName = host.name;
+    document.getElementById("hostName").innerText = hostName;
+
+    // фаза
+    document.getElementById("phaseBadge").innerText = phaseLabel(json.phase);
+
+    if (json.game_started) {
+      document.getElementById("gameStartedBadge").className = "badge bg-success";
+      document.getElementById("gameStartedBadge").innerText = "Игра идёт";
+    } else {
+      document.getElementById("gameStartedBadge").className = "badge bg-secondary";
+      document.getElementById("gameStartedBadge").innerText = "Игра не началась";
+    }
+
+    // я в комнате?
+    const inRoom = (json.players || []).some(p => p.id === myId);
+
+    document.getElementById("btnJoin").disabled = inRoom || json.game_started;
+    document.getElementById("btnLeave").disabled = !inRoom || json.game_started;
+
+    document.getElementById("btnBecomeHost").disabled =
+      !inRoom || json.game_started || (json.host_id !== null);
+
+    // старт только ведущий
+    document.getElementById("btnStartGame").disabled = (json.host_id !== myId);
+
+    // моя роль (ТОЛЬКО по моему id!)
+    let myRole = "—";
+    myRoleRaw = null;
+
+    const mine = (json.players || []).find(p => p.id === myId);
+    if (mine && mine.role) {
+      myRole = roleLabel(mine.role);
+      myRoleRaw = mine.role;
+    }
+
+    document.getElementById("myRole").innerText = myRole;
+
+    // голоса
+    window.dayVotes = {};
+    if (json.day_votes) {
+      for (const k in json.day_votes) {
+        window.dayVotes[parseInt(k)] = json.day_votes[k];
+      }
+    }
+
+    // восстановление подсветки моего выбора
+    if (json.my_day_vote_target_id) {
+      selectedTargetId = json.my_day_vote_target_id;
+    }
+
+    // игроки
+    renderPlayers(json.players);
+
+    // таймер хода
+    const turnLeft = secondsLeft(json.action_deadline);
+    document.getElementById("turnTimer").innerText = formatSeconds(turnLeft);
+
+    // кто ходит
+    document.getElementById("turnRoleText").innerText = turnRoleLabel(json.turn_role);
+
+    // дедлайн дневного голосования
+    const dayVoteLeft = secondsLeft(json.day_vote_deadline);
+    document.getElementById("dayVoteTimer").innerText = formatSeconds(dayVoteLeft);
+
+    // дедлайн текстом
+    document.getElementById("dayVoteDeadlineText").innerText = fmtDeadline(json.day_vote_deadline);
+
+    // победитель
+    if (json.winner_text && json.winner_text !== lastWinnerText) {
+      lastWinnerText = json.winner_text;
+      alert(json.winner_text);
+    }
+
+    document.getElementById("statusText").innerText =
+      `Комната ${json.room} • Игроков: ${json.count} • Фаза: ${phaseLabel(json.phase)}`;
+
+  } catch (e) {
+    document.getElementById("statusText").innerText = "Ошибка соединения со state()";
+  }
+}
+
+  async function loadChat() {
+    try {
+      const res = await fetch(CHAT_LIST_URL);
+      const data = await res.json();
+
+      const box = document.getElementById("chatBox");
+      box.innerHTML = "";
+
+      if (data.status !== "success") {
+        box.innerHTML = `<div class="muted">Чат недоступен</div>`;
+        return;
+      }
+
+      if (!data.messages || data.messages.length === 0) {
+        box.innerHTML = `<div class="muted">Чат доступен только днём или сообщений нет</div>`;
+        return;
+      }
+
+      data.messages.forEach(m => {
+        const div = document.createElement("div");
+        div.className = "chat-line";
+        div.innerHTML = `
+          <span class="chat-time">[${m.time}]</span>
+          <b title="${m.full_name || m.user}" style="cursor: help;">${m.user}</b>:
+          ${m.text}
+        `;
+        box.appendChild(div);
+      });
+
+      box.scrollTop = box.scrollHeight;
+    } catch (e) {
+      console.log("chat load error", e);
+    }
+  }
+
+  async function sendChat() {
+    const text = document.getElementById("chatInput").value.trim();
+    if (!text) return;
+
+    const form = new FormData();
+    form.append("text", text);
+
+    const r = await post(CHAT_SEND_URL, form);
+
+    if (r.status !== "success") {
+      document.getElementById("chatStatus").innerText = r.message || "Ошибка отправки";
+      return;
+    }
+
+    document.getElementById("chatInput").value = "";
+    document.getElementById("chatStatus").innerText = "Отправлено ✅";
+    await loadChat();
+  }
+
+  async function setPhase(phase) {
+    const form = new FormData();
+    form.append("phase", phase);
+
+    const r = await post(PHASE_SET_URL, form);
+    if (r.status !== "success") alert(r.message || "Ошибка смены фазы");
+
+    await loadState();
+    await loadChat();
+  }
+
+  // events
+  document.getElementById("btnJoin").addEventListener("click", async () => {
+    const r = await post(JOIN_URL);
+    if (r.status !== "success") alert(r.message || "Ошибка входа");
+    await loadState();
+  });
+
+  document.getElementById("btnLeave").addEventListener("click", async () => {
+    const r = await post(LEAVE_URL);
+    if (r.status !== "success") alert(r.message || "Ошибка выхода");
+    await loadState();
+  });
+
+  document.getElementById("btnBecomeHost").addEventListener("click", async () => {
+    const r = await post(BECOME_HOST_URL);
+    if (r.status !== "success") alert(r.message || "Ошибка назначения ведущего");
+    await loadState();
+  });
+
+  document.getElementById("btnStartGame").addEventListener("click", async () => {
+    const r = await post(START_URL);
+    if (r.status !== "success") alert(r.message || "Ошибка старта игры");
+    await loadState();
+  });
+
+  document.getElementById("btnSetDay").addEventListener("click", () => setPhase("day"));
+  document.getElementById("btnSetNight").addEventListener("click", () => setPhase("night"));
+
+  document.getElementById("chatSendBtn").addEventListener("click", sendChat);
+  document.getElementById("chatInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") sendChat();
+  });
+
+  document.getElementById("btnStartDayVote").addEventListener("click", async () => {
+    const r = await post(DAY_VOTE_START_URL);
+    if (r.status !== "success") {
+      alert(r.message || "Ошибка запуска голосования");
+      return;
+    }
+    alert("Голосование запущено! 🗳");
+    await loadState();
+  });
+
+  // polling
+  loadState();
+  loadChat();
+  setInterval(loadState, 1500);
+  setInterval(loadChat, 1200);
+
+  // визуальный таймер
+  setInterval(() => {
+    const turnTimerEl = document.getElementById("turnTimer");
+    const dayVoteTimerEl = document.getElementById("dayVoteTimer");
+
+    const parseSec = (txt) => {
+      const m = (txt || "").match(/(\d+)/);
+      return m ? parseInt(m[1]) : null;
+    };
+
+    let s1 = parseSec(turnTimerEl.innerText);
+    if (s1 !== null && s1 > 0) turnTimerEl.innerText = `${s1 - 1} сек`;
+
+    let s2 = parseSec(dayVoteTimerEl.innerText);
+    if (s2 !== null && s2 > 0) dayVoteTimerEl.innerText = `${s2 - 1} сек`;
+  }, 1000);
+
+  // ping
+  setInterval(async () => {
+    try {
+      await post(PING_URL);
+    } catch (e) {}
+  }, 10000);
+
+  console.log("SCRIPT OK");
+
+  document.getElementById("btnDoAction").addEventListener("click", async () => {
+  if (!selectedTargetId) {
+    alert("Сначала выбери игрока 👆");
+    return;
+  }
+
+  // если идёт ночь и ход твоей роли → действие роли
+  if (currentPhase === "night" && myTurnRole === myRoleRaw) {
+    const form = new FormData();
+    form.append("target_id", selectedTargetId);
+
+    const r = await post(`/mafia/room/${ROOM_NUMBER}/action/`, form);
+
+    if (r.status !== "success") {
+      alert(r.message || "Ошибка действия");
+      return;
+    }
+
+    alert("Действие выполнено ✅");
+    selectedTargetId = null;
+    await loadState();
+    return;
+  }
+
+  // если идёт дневное голосование → голос
+  if (currentPhase === "day" && dayVoteActive) {
+    const form = new FormData();
+    form.append("target_id", selectedTargetId);
+
+    const r = await post(`/mafia/room/${ROOM_NUMBER}/day-vote/cast/`, form);
+
+    if (r.status !== "success") {
+      alert(r.message || "Ошибка голосования");
+      return;
+    }
+
+    alert("Голос принят 🗳");
+    selectedTargetId = null;
+    await loadState();
+    return;
+  }
+
+  alert("Сейчас нельзя действовать ❌ (не твой ход и не голосование)");
+});
+
+</script>
+
+</body>
+</html>

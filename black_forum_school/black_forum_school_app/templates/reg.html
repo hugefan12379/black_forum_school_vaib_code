@@ -1,0 +1,89 @@
+{% csrf_token %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация</title>
+
+    <!-- Стили -->
+    <link rel="stylesheet" href="{% static 'css/header.css' %}">
+    <link rel="stylesheet" href="{% static 'css/reg.css' %}">
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+          integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
+          crossorigin="anonymous" referrerpolicy="no-referrer">
+</head>
+<body>
+    <div class="container">
+        <h1>Регистрация</h1>
+        <form action="/reg/" method="POST" id="reg-form">
+            {% csrf_token %}
+
+        
+
+            <div class="form-group">
+                <label for="first-name" class="form-label">Имя</label>
+                <input type="text" id="first-name" name="first_name" class="form-control" placeholder="Введите имя">
+            </div>
+
+            <div class="form-group">
+                <label for="last-name" class="form-label">Фамилия</label>
+                <input type="text" id="last-name" name="last_name" class="form-control" placeholder="Введите фамилию">
+            </div>
+
+            <div class="form-group">
+                <label for="email" class="form-label">Электронная почта</label>
+                <input type="email" id="email" name="email" class="form-control" required placeholder="Введите e‑mail">
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="form-label">Пароль</label>
+                <input type="password" id="password" name="password" class="form-control" required minlength="6" placeholder="Введите пароль">
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password" class="form-label">Подтвердите пароль</label>
+                <input type="password" id="confirm_password" name="confirm_password" class="form-control" required placeholder="Повторите пароль">
+            </div>
+
+            <!-- Новое поле: номер и буква класса -->
+            <div class="form-group">
+                <label for="class_info" class="form-label">Номер и буква класса</label>
+                <input type="text" id="class_info" name="class_info" class="form-control" placeholder="Например: 10А" maxlength="3">
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="agree" name="agree" required>
+                <label for="agree">Я согласен с <a href="/question">условиями использования</a></label>
+            </div>
+
+            <button type="submit" id="reg-button" class="btn btn-dark">
+    Зарегистрироваться
+</button>
+
+
+            <div class="links">
+                <a href="/auth">Уже есть аккаунт? Войти</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Скрипты -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    {% comment %} <script src="{% static 'js/nav.js' %}"></script> {% endcomment %}
+    {% comment %} <script src="{% static 'js/footer.js' %}"></script> {% endcomment %}
+    {% comment %} <script src="{% static 'js/reg.js' %}"></script> {% endcomment %}
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+</body>
+</html>

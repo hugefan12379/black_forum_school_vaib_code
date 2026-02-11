@@ -1,0 +1,33 @@
+#name {
+    background-color: darkorange;
+    border: solid;
+    text-align: center;
+    font-size: 170%;
+}
+#novbar {
+
+    border: solid;
+    text-align: center;
+    font-size: 150%;   
+}
+#panel_all {
+    text-align: right;
+}
+
+
+.es-interesting {
+    background-color: rgb(187, 214, 184);
+}
+
+.es-interesting-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.es-svg-icon {
+    width: 2rem;
+    height: 2rem;
+    fill: black;
+}
+

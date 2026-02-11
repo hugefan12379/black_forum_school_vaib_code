@@ -1,0 +1,20 @@
+{% extends "forum/base.html" %}
+{% block title %}Новый пост{% endblock %}
+
+{% block content %}
+<h2>➕ Новый пост</h2>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <input type="text" name="title" class="form-control mb-2"
+           placeholder="Заголовок" required>
+
+    <textarea name="text" class="form-control mb-2"
+              rows="8" placeholder="Текст (абзацы сохраняются)" required></textarea>
+
+    <input type="file" name="image" class="form-control mb-2">
+
+    <button class="btn btn-primary">Опубликовать</button>
+</form>
+{% endblock %}
