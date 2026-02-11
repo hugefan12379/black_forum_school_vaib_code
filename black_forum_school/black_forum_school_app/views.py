@@ -11,30 +11,43 @@ from datetime import timedelta
 from .models import ChatMessage, ForumPost, ForumComment
 from .utils.nudenet_check import check_image_safe
 
+
 # =========================
 # NudeNet (чат)
 # =========================
 try:
     from nudenet import NudeDetector
     detector = NudeDetector()
-    print("NudeNet: OK")
-except Exception as e:
+except Exception:
     detector = None
-    print("NudeNet: OFF", e)
+
 
 TEXT_TTL_DAYS = 14
 IMAGE_TTL_DAYS = 14
 FILE_TTL_DAYS = 7
 NSFW_THRESHOLD = 0.25
 
+
 # =========================
 # ВСПОМОГАТЕЛЬНОЕ
 # =========================
 def cleanup_old_chat_messages():
     now = timezone.now()
-    ChatMessage.objects.filter(created_at__lt=now - timedelta(days=TEXT_TTL_DAYS), image__isnull=True, file__isnull=True).delete()
-    ChatMessage.objects.filter(created_at__lt=now - timedelta(days=IMAGE_TTL_DAYS), image__isnull=False).delete()
-    ChatMessage.objects.filter(created_at__lt=now - timedelta(days=FILE_TTL_DAYS), file__isnull=False).delete()
+    ChatMessage.objects.filter(
+        created_at__lt=now - timedelta(days=TEXT_TTL_DAYS),
+        image__isnull=True,
+        file__isnull=True
+    ).delete()
+
+    ChatMessage.objects.filter(
+        created_at__lt=now - timedelta(days=IMAGE_TTL_DAYS),
+        image__isnull=False
+    ).delete()
+
+    ChatMessage.objects.filter(
+        created_at__lt=now - timedelta(days=FILE_TTL_DAYS),
+        file__isnull=False
+    ).delete()
 
 
 def is_image_nsfw(uploaded_file) -> bool:
@@ -42,11 +55,12 @@ def is_image_nsfw(uploaded_file) -> bool:
         return False
 
     try:
+        import tempfile
+
         uploaded_file.seek(0)
         data = uploaded_file.read()
         uploaded_file.seek(0)
 
-        import tempfile
         suffix = ".jpg" if not uploaded_file.name.lower().endswith(".png") else ".png"
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
@@ -54,6 +68,7 @@ def is_image_nsfw(uploaded_file) -> bool:
             path = tmp.name
 
         detections = detector.detect(path)
+
         BAD_CLASSES = {
             "FEMALE_BREAST_EXPOSED",
             "FEMALE_GENITALIA_EXPOSED",
@@ -66,7 +81,7 @@ def is_image_nsfw(uploaded_file) -> bool:
             d.get("class") in BAD_CLASSES and d.get("score", 0) >= NSFW_THRESHOLD
             for d in detections
         )
-    except:
+    except Exception:
         return False
 
 
@@ -173,7 +188,7 @@ def chat_delete(request, msg_id):
 
 
 # =========================
-# ФОРУМ (ЕДИНСТВЕННАЯ ВЕРСИЯ)
+# ФОРУМ
 # =========================
 @login_required
 def forum_home(request):
@@ -183,13 +198,40 @@ def forum_home(request):
 
 @login_required
 def forum_create_post(request):
-    if not ForumPost.can_user_post(request.user):
-        messages.error(request, "Можно публиковать 1 пост в 24 часа")
+    now = timezone.now()
+    last_24h = now - timedelta(hours=24)
+
+    # 🧠 считаем посты за последние 24 часа
+    posts_last_24h = ForumPost.objects.filter(
+        author=request.user,
+        created_at__gte=last_24h
+    ).order_by("-created_at")
+
+    # 🔐 лимиты
+    if request.user.is_staff:
+        limit = 100
+    else:
+        limit = 1
+
+    # ⛔ лимит превышен
+    if posts_last_24h.count() >= limit:
+        last_post_time = posts_last_24h.first().created_at
+        reset_at = last_post_time + timedelta(hours=24)
+        seconds_left = int((reset_at - now).total_seconds())
+
+        messages.error(
+            request,
+            f"Вы опубликовали максимум постов за 24 часа. "
+            f"Таймер сбросится через {seconds_left} сек."
+        )
         return redirect("forum_home")
 
+    # ✅ создание поста
     if request.method == "POST":
         title = request.POST.get("title")
-        description = request.POST.get("text")  # 🔥 ВОТ ОНО
+        description = request.POST.get("text")
+        content = request.POST.get("text")
+        image = request.FILES.get("image")
 
         if not title or not description:
             messages.error(request, "Заполните все поля")
@@ -199,181 +241,17 @@ def forum_create_post(request):
             author=request.user,
             title=title,
             description=description,
-            is_visible=True,
-        )
-
-        image = request.FILES.get("image")
-        if image:
-            if not check_image_safe(image):
-                post.delete()
-                messages.error(request, "Изображение запрещено")
-                return redirect("forum_home")
-            post.image = image
-            post.save()
-
-        return redirect("forum_home")
-
-    return render(request, "forum/create_post.html")
-
-
-
-@login_required
-def forum_post_detail(request, post_id):
-    post = get_object_or_404(ForumPost, id=post_id, is_visible=True)
-
-    if request.method == "POST":
-        ForumComment.objects.create(
-            post=post,
-            author=request.user,
-            text=request.POST.get("text"),
-        )
-        return redirect("forum_post_detail", post_id=post.id)
-
-    return render(request, "forum/post_detail.html", {"post": post})
-
-
-# =========================
-# ПРОСТЫЕ СТРАНИЦЫ
-# =========================
-def question(request):
-    return render(request, "question.html")
-
-
-def images(request):
-    return render(request, "images.html")
-
-
-
-
-
-
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.utils import timezone
-from .models import ForumPost, ForumComment
-from .utils.nudenet_check import check_image_safe
-from django.contrib import messages
-import os
-
-
-@login_required
-def forum_home(request):
-    posts = ForumPost.objects.filter(is_visible=True).order_by("-created_at")
-    return render(request, "forum/home.html", {"posts": posts})
-
-
-@login_required
-def forum_create_post(request):
-    if not ForumPost.can_user_post(request.user):
-        messages.error(request, "Можно публиковать только 1 статью раз в 24 часа.")
-        return redirect("forum_home")
-
-    if request.method == "POST":
-        title = request.POST.get("title")
-        description = request.POST.get("description")
-        content = request.POST.get("content")
-        image = request.FILES.get("image")
-
-        post = ForumPost.objects.create(
-            author=request.user,
-            title=title,
-            description=description,
             content=content,
             image=image,
-            is_visible=False,
-            is_checked=False,
+            is_visible=True,
+            is_checked=True,
         )
-
-        if image:
-            img_path = post.image.path
-            result = check_image_safe(img_path)
-
-            if result is None:
-                post.delete()
-                messages.error(request, "Файл не удалось проверить. Загрузка запрещена.")
-                return redirect("forum_home")
-
-            if result is False:
-                post.delete()
-                messages.error(request, "Изображение содержит недопустимый контент.")
-                return redirect("forum_home")
-
-        post.is_visible = True
-        post.is_checked = True
-        post.save()
 
         return redirect("forum_home")
 
     return render(request, "forum/create_post.html")
 
 
-
-
-
-
-
-
-
-@login_required
-def forum_post_detail(request, post_id):
-    post = get_object_or_404(ForumPost, id=post_id, is_visible=True)
-
-    if request.method == "POST":
-        text = request.POST.get("text")
-        ForumComment.objects.create(
-            post=post,
-            author=request.user,
-            text=text
-        )
-        return redirect("forum_post_detail", post_id=post.id)
-
-    return render(request, "forum/post_detail.html", {"post": post})
-
-
-@login_required
-@require_POST
-def forum_delete_post(request, post_id):
-    post = get_object_or_404(ForumPost, id=post_id)
-
-    if request.user != post.author and not request.user.is_staff:
-        return JsonResponse({"status": "error", "message": "Нет прав"})
-
-    post.delete()
-    return JsonResponse({"status": "success"})
-
-
-@login_required
-@require_POST
-def forum_like(request, post_id):
-    post = get_object_or_404(ForumPost, id=post_id)
-
-    if request.user in post.likes.all():
-        post.likes.remove(request.user)
-    else:
-        post.likes.add(request.user)
-        post.dislikes.remove(request.user)
-
-    return JsonResponse({
-        "likes": post.likes.count(),
-        "dislikes": post.dislikes.count()
-    })
-
-
-@login_required
-@require_POST
-def forum_dislike(request, post_id):
-    post = get_object_or_404(ForumPost, id=post_id)
-
-    if request.user in post.dislikes.all():
-        post.dislikes.remove(request.user)
-    else:
-        post.dislikes.add(request.user)
-        post.likes.remove(request.user)
-
-    return JsonResponse({
-        "likes": post.likes.count(),
-        "dislikes": post.dislikes.count()
-    })
 
 @login_required
 def forum_post_detail(request, post_id):
@@ -394,3 +272,14 @@ def forum_post_detail(request, post_id):
         "post": post,
         "comments": comments
     })
+
+
+# =========================
+# ПРОСТЫЕ СТРАНИЦЫ
+# =========================
+def question(request):
+    return render(request, "question.html")
+
+
+def images(request):
+    return render(request, "images.html")

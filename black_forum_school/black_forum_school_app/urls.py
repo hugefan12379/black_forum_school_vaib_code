@@ -20,8 +20,6 @@ urlpatterns = [
     path("forum/create/", views.forum_create_post, name="forum_create_post"),
     path("forum/post/<int:post_id>/", views.forum_post_detail, name="forum_post_detail"),
     path("forum/", views.forum_home, name="forum_home"),
-    path("forum/post/<int:post_id>/delete/", views.forum_delete_post, name="forum_delete_post"),
-    path("forum/post/<int:post_id>/like/", views.forum_like, name="forum_like"),
-path("forum/post/<int:post_id>/dislike/", views.forum_dislike, name="forum_dislike"),
+
 
 ]

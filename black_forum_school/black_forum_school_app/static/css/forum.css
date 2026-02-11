@@ -1,0 +1,71 @@
+/* ===== ОБЩИЙ ФОН ===== */
+body {
+    background: radial-gradient(1200px 600px at 20% 0%, #2a3446 0%, #151a22 55%, #0f1218 100%);
+    color: #eaeaff;
+    font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+/* ===== КАРТОЧКИ ===== */
+.card-dark {
+    background: rgba(45, 52, 66, 0.92);
+    border-radius: 16px;
+    border: 1px solid rgba(180, 200, 255, 0.18);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+/* ===== ЗАГОЛОВКИ ===== */
+h2, h3, h4 {
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+/* ===== ТЕКСТ СТАТЬИ ===== */
+.article-content {
+    font-size: 16px;
+    line-height: 1.7;
+    color: #f1f2ff;
+}
+
+/* ===== КАРТИНКА ===== */
+.article-image {
+    max-height: 420px;
+    width: 100%;
+    object-fit: cover;
+    border-radius: 14px;
+    margin: 18px 0;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+}
+
+/* ===== КОММЕНТАРИИ ===== */
+.comment {
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+    padding: 12px 0;
+}
+
+.comment:last-child {
+    border-bottom: none;
+}
+
+.comment-author {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.comment-time {
+    font-size: 12px;
+    color: #bfc7ff;
+}
+
+/* ===== КНОПКИ ===== */
+.btn-primary {
+    background: linear-gradient(135deg, #5b7cff, #8fa2ff);
+    border: none;
+    color: #0f1218;
+    font-weight: 600;
+}
+
+.btn-outline-light {
+    border-color: rgba(255,255,255,0.3);
+}
