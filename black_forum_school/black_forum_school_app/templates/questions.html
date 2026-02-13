@@ -1,0 +1,495 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вопросы и правила — Подпольный сайт школы</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <style>
+        body {
+            background: radial-gradient(1200px 600px at 20% 0%, #2a3446 0%, #151a22 55%, #0f1218 100%);
+            color: #fff;
+        }
+
+        .site-title {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 1px;
+        }
+
+        .rules-card {
+            background: rgba(45, 52, 66, 0.92);
+            border: 1px solid rgba(180, 200, 255, 0.18);
+            border-radius: 14px;
+            padding: 24px;
+            height: 100%;
+            transition: transform 0.2s;
+        }
+        
+        .rules-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(79, 124, 255, 0.5);
+            box-shadow: 0 10px 30px rgba(79, 124, 255, 0.2);
+        }
+
+        .rules-card h3 {
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #4f7cff;
+        }
+
+        .rule-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+        }
+        
+        .rule-item i {
+            font-size: 20px;
+            color: #4f7cff;
+            min-width: 30px;
+        }
+        
+        .rule-item-content {
+            flex: 1;
+        }
+        
+        .rule-item-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .rule-item-desc {
+            color: #a0a8b8;
+            font-size: 14px;
+        }
+
+        .question-card {
+            background: rgba(45, 52, 66, 0.92);
+            border: 1px solid rgba(180, 200, 255, 0.18);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+        
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .question-author {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .question-author i {
+            font-size: 24px;
+            color: #6c757d;
+        }
+        
+        .question-meta {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        .question-text {
+            color: #e5e7eb;
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+        
+        .question-answers {
+            border-top: 1px solid rgba(180, 200, 255, 0.1);
+            padding-top: 16px;
+            margin-top: 16px;
+        }
+        
+        .answer {
+            margin-left: 30px;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+        }
+        
+        .answer-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .answer-author {
+            font-weight: 600;
+            color: #4f7cff;
+        }
+        
+        .answer-date {
+            color: #6c757d;
+            font-size: 12px;
+        }
+        
+        .answer-text {
+            color: #d1d5db;
+        }
+
+        .ask-form {
+            background: rgba(45, 52, 66, 0.92);
+            border: 1px solid rgba(180, 200, 255, 0.18);
+            border-radius: 14px;
+            padding: 24px;
+            margin-top: 30px;
+        }
+        
+        .ask-form textarea {
+            background: rgba(10, 15, 25, 0.8);
+            border: 1px solid rgba(180, 200, 255, 0.2);
+            color: #fff;
+        }
+        
+        .ask-form textarea:focus {
+            background: rgba(20, 25, 35, 0.9);
+            border-color: #4f7cff;
+            color: #fff;
+            box-shadow: 0 0 0 0.2rem rgba(79, 124, 255, 0.25);
+        }
+
+        .forum-cta {
+            background: linear-gradient(135deg, #4f7cff, #6a5cff);
+            border-radius: 18px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            margin: 40px 0;
+        }
+
+        .forum-cta h2 {
+            font-weight: 900;
+        }
+        
+        .badge-rule {
+            background: rgba(79, 124, 255, 0.2);
+            color: #4f7cff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div class="container py-4 text-center">
+    <img src="{% static 'images/logo_fake_locked.jpg' %}" width="110" class="mb-3 rounded">
+    <div class="site-title">❓ Вопросы и правила</div>
+</div>
+
+<!-- NAVBAR (такой же как в index.html) -->
+<nav class="navbar navbar-expand-xl navbar-dark bg-dark sticky-top">
+    <div class="container-fluid">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarWithDropdown">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarWithDropdown">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'index' %}">База</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'questions' %}">Правила и вопросы</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'chat' %}">Общий чат</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'images' %}">История школы</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'mafia_rooms' %}">🎭 Мафия</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-bold text-info" href="{% url 'forum_home' %}">
+                        📰 Форум
+                    </a>
+                </li>
+            </ul>
+
+            <ul class="navbar-nav">
+                {% if user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ user.email }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Выйти</a></li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'auth' %}"><i class="bi bi-box-arrow-in-right"></i> Вход / Регистрация</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- ОСНОВНОЙ КОНТЕНТ -->
+<div class="container my-5">
+
+    <!-- ЗАГОЛОВОК -->
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold">Правила и частые вопросы</h1>
+        <p class="lead text-secondary">Здесь собраны основные правила сайта и ответы на популярные вопросы</p>
+    </div>
+
+    <!-- БЛОК С ПРАВИЛАМИ (2 колонки) -->
+    <div class="row g-4 mb-5">
+        <!-- Основные правила -->
+        <div class="col-md-6">
+            <div class="rules-card">
+                <h3><i class="bi bi-shield-check"></i> Основные правила</h3>
+                
+                <div class="rule-item">
+                    <i class="bi bi-1-circle-fill"></i>
+                    <div class="rule-item-content">
+                        <div class="rule-item-title">Уважение к участникам</div>
+                        <div class="rule-item-desc">Запрещены оскорбления, буллинг, дискриминация по любому признаку</div>
+                    </div>
+                </div>
+                
+                <div class="rule-item">
+                    <i class="bi bi-2-circle-fill"></i>
+                    <div class="rule-item-content">
+                        <div class="rule-item-title">Безопасный контент</div>
+                        <div class="rule-item-desc">Запрещены изображения 18+, насилие, опасные ссылки</div>
+                    </div>
+                </div>
+                
+                <div class="rule-item">
+                    <i class="bi bi-3-circle-fill"></i>
+                    <div class="rule-item-content">
+                        <div class="rule-item-title">Не спамить</div>
+                        <div class="rule-item-desc">Запрещен флуд, реклама, массовые рассылки</div>
+                    </div>
+                </div>
+                
+                <div class="rule-item">
+                    <i class="bi bi-4-circle-fill"></i>
+                    <div class="rule-item-content">
+                        <div class="rule-item-title">Адекватное поведение</div>
+                        <div class="rule-item-desc">Не провоцировать конфликты, не троллить</div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <span class="badge-rule">Нарушения наказываются баном</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Правила форума -->
+        <div class="col-md-6">
+            <div class="rules-card">
+                <h3><i class="bi bi-chat-text"></i> Правила форума</h3>
+                
+                <div class="rule-item">
+                    <i class="bi bi-chat"></i>
+                    <div class="rule-item-content">
+                        <div class="rule-item-title">Темы должны соответствовать форуму</div>
+                        <div class="rule-item-desc">Публикуйте посты в соответствующих разделах</div>
+                    </div>
+                </div>
+                
+                <div class="rule-item">
+                    <i class="bi bi-clock"></i>
+                    <div class="rule-item-content">
+                        <div class="rule-item-title">Лимит постов</div>
+                        <div class="rule-item-desc">Не более 1 поста в 24 часа для обычных пользователей</div>
+                    </div>
+                </div>
+                
+                <div class="rule-item">
+                    <i class="bi bi-camera"></i>
+                    <div class="rule-item-content">
+                        <div class="rule-item-title">Проверка изображений</div>
+                        <div class="rule-item-desc">Все картинки проверяются NudeNet на безопасность</div>
+                    </div>
+                </div>
+                
+                <div class="rule-item">
+                    <i class="bi bi-chat-dots"></i>
+                    <div class="rule-item-content">
+                        <div class="rule-item-title">Комментарии</div>
+                        <div class="rule-item-desc">Будьте вежливы в комментариях к постам</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ЧАСТЫЕ ВОПРОСЫ -->
+    <h2 class="mb-4"><i class="bi bi-question-circle"></i> Часто задаваемые вопросы</h2>
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="question-card">
+                <div class="question-header">
+                    <div class="question-author">
+                        <i class="bi bi-person-circle"></i>
+                        <span class="fw-bold">Как создать пост на форуме?</span>
+                    </div>
+                    <div class="question-meta">
+                        <i class="bi bi-eye"></i> 245 просмотров
+                    </div>
+                </div>
+                <div class="question-text">
+                    Нажмите кнопку "➕ Создать пост" на главной странице форума. Заполните заголовок и текст, 
+                    при желании добавьте изображение. После публикации пост сразу появится на форуме.
+                </div>
+            </div>
+            
+            <div class="question-card">
+                <div class="question-header">
+                    <div class="question-author">
+                        <i class="bi bi-person-circle"></i>
+                        <span class="fw-bold">Почему я не могу создать больше одного поста?</span>
+                    </div>
+                    <div class="question-meta">
+                        <i class="bi bi-eye"></i> 189 просмотров
+                    </div>
+                </div>
+                <div class="question-text">
+                    Для обычных пользователей действует лимит: 1 пост в 24 часа. Это сделано для 
+                    предотвращения спама. Для администраторов лимит увеличен до 100 постов.
+                </div>
+            </div>
+            
+            <div class="question-card">
+                <div class="question-header">
+                    <div class="question-author">
+                        <i class="bi bi-person-circle"></i>
+                        <span class="fw-bold">Как работает фильтр изображений?</span>
+                    </div>
+                    <div class="question-meta">
+                        <i class="bi bi-eye"></i> 156 просмотров
+                    </div>
+                </div>
+                <div class="question-text">
+                    Все загружаемые изображения проверяются нейросетью NudeNet. Если изображение содержит 
+                    контент 18+, оно будет отклонено. Проверка происходит автоматически при загрузке.
+                </div>
+            </div>
+            
+            <div class="question-card">
+                <div class="question-header">
+                    <div class="question-author">
+                        <i class="bi bi-person-circle"></i>
+                        <span class="fw-bold">Как войти в игру Мафия?</span>
+                    </div>
+                    <div class="question-meta">
+                        <i class="bi bi-eye"></i> 134 просмотра
+                    </div>
+                </div>
+                <div class="question-text">
+                    Перейдите в раздел "Мафия" в навигационном меню. Там вы увидите список доступных комнат 
+                    или сможете создать свою. Для игры необходимо быть авторизованным.
+                </div>
+            </div>
+            
+            <div class="question-card">
+                <div class="question-header">
+                    <div class="question-author">
+                        <i class="bi bi-person-circle"></i>
+                        <span class="fw-bold">Можно ли удалить свой пост?</span>
+                    </div>
+                    <div class="question-meta">
+                        <i class="bi bi-eye"></i> 98 просмотров
+                    </div>
+                </div>
+                <div class="question-text">
+                    Обычные пользователи не могут удалять посты. Если вы ошиблись или хотите удалить пост, 
+                    обратитесь к администратору. Администраторы могут удалять любые посты.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ФОРМА ДЛЯ НОВОГО ВОПРОСА (только для авторизованных) -->
+    {% if user.is_authenticated %}
+    <div class="ask-form">
+        <h4 class="mb-3"><i class="bi bi-pencil-square"></i> Задать свой вопрос</h4>
+        <form method="post" action="{% url 'questions' %}">
+            {% csrf_token %}
+            <div class="mb-3">
+                <textarea name="question_text" class="form-control" rows="4" 
+                          placeholder="Напишите ваш вопрос..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-send"></i> Отправить вопрос
+            </button>
+        </form>
+        <p class="text-muted small mt-2">
+            <i class="bi bi-info-circle"></i> 
+            Ваш вопрос появится после проверки модератором
+        </p>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> 
+        <a href="{% url 'auth' %}" class="alert-link">Войдите</a>, чтобы задать вопрос.
+    </div>
+    {% endif %}
+
+    <!-- ССЫЛКА НА ФОРУМ -->
+    <div class="forum-cta my-5">
+        <h2>📰 Остались вопросы?</h2>
+        <p class="mt-3">
+            Может быть, ответ уже есть на форуме? Заходи и общайся!
+        </p>
+        <a href="{% url 'forum_home' %}" class="btn btn-light btn-lg mt-3 px-5">
+            Перейти на форум <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer class="text-center py-4 text-secondary">
+    <p>© 2025 • Подпольный сайт школы</p>
+    <p>Сайт не является официальным сайтом школы</p>
+    <a href="https://vk.com/rvmeste_ufa" class="text-secondary">Официальная группа ВК</a>
+</footer>
+<div class="container">
+                <div class="row justify-content-center">
+                {% for item in items_list %}
+                    <div class="col-3">
+                        <div class="card" style="width: 18rem;">
+                            <img src={{ item.photo.url }} class="card-img-top" alt={{ item.item_title }}>
+                            <div class="card-body">
+                                <h5 class="card-title">{{ item.item_title }}</h5>
+                                <p class="card-text">S{{ item.description }}</p>
+                                <a href="/item/{{ item.id }}" class="card-button">Подробнее</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+                </div>
+            </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

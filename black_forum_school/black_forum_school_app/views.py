@@ -7,8 +7,9 @@ from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta
+from django.contrib import messages
 
-from .models import ChatMessage, ForumPost, ForumComment
+from .models import ChatMessage, ForumPost, ForumComment, Topic  # Добавлен импорт Topic
 from .utils.nudenet_check import check_image_safe
 
 
@@ -192,8 +193,41 @@ def chat_delete(request, msg_id):
 # =========================
 @login_required
 def forum_home(request):
-    posts = ForumPost.objects.filter(is_visible=True).order_by("-created_at")
-    return render(request, "forum/home.html", {"posts": posts})
+    # Получаем выбранную тему из GET параметров
+    selected_topic = request.GET.get('topic')
+    selected_topic_id = request.GET.get('topic_id')
+    
+    # Базовый запрос
+    posts = ForumPost.objects.filter(is_visible=True)
+    
+    # Применяем фильтр по теме
+    if selected_topic:
+        posts = posts.filter(topics__slug=selected_topic)
+    elif selected_topic_id:
+        posts = posts.filter(topics__id=selected_topic_id)
+    
+    # Сортируем
+    posts = posts.order_by("-created_at")
+    
+    # Получаем все темы для фильтров (только те, у которых есть посты)
+    topics_with_posts = Topic.objects.filter(forum_posts__is_visible=True).distinct()
+    
+    # Считаем количество постов в каждой теме
+    for topic in topics_with_posts:
+        topic.post_count = ForumPost.objects.filter(
+            is_visible=True, 
+            topics=topic
+        ).count()
+    
+    # Добавляем сообщения в контекст
+    messages_list = messages.get_messages(request)
+    
+    return render(request, "forum/home.html", {
+        "posts": posts,
+        "topics": topics_with_posts,
+        "selected_topic": selected_topic or selected_topic_id,
+        "messages": messages_list
+    })
 
 
 @login_required
@@ -201,19 +235,16 @@ def forum_create_post(request):
     now = timezone.now()
     last_24h = now - timedelta(hours=24)
 
-    # 🧠 считаем посты за последние 24 часа
     posts_last_24h = ForumPost.objects.filter(
         author=request.user,
         created_at__gte=last_24h
     ).order_by("-created_at")
 
-    # 🔐 лимиты
     if request.user.is_staff:
         limit = 100
     else:
         limit = 1
 
-    # ⛔ лимит превышен
     if posts_last_24h.count() >= limit:
         last_post_time = posts_last_24h.first().created_at
         reset_at = last_post_time + timedelta(hours=24)
@@ -226,31 +257,39 @@ def forum_create_post(request):
         )
         return redirect("forum_home")
 
-    # ✅ создание поста
     if request.method == "POST":
         title = request.POST.get("title")
-        description = request.POST.get("text")
-        content = request.POST.get("text")
+        text_content = request.POST.get("text")
         image = request.FILES.get("image")
+        
+        # Получаем выбранные темы
+        topic_ids = request.POST.getlist("topics")
 
-        if not title or not description:
+        if not title or not text_content:
             messages.error(request, "Заполните все поля")
             return redirect("forum_create_post")
 
+        # Создаем пост
         post = ForumPost.objects.create(
             author=request.user,
             title=title,
-            description=description,
-            content=content,
+            description=text_content,
+            content=text_content,
             image=image,
             is_visible=True,
             is_checked=True,
         )
+        
+        # Добавляем темы
+        if topic_ids:
+            post.topics.set(topic_ids)
 
+        messages.success(request, "Пост успешно создан!")
         return redirect("forum_home")
 
-    return render(request, "forum/create_post.html")
-
+    # Получаем все темы для формы создания
+    topics = Topic.objects.all()
+    return render(request, "forum/create_post.html", {"topics": topics})
 
 
 @login_required
@@ -283,3 +322,24 @@ def question(request):
 
 def images(request):
     return render(request, "images.html")
+
+
+def questions(request):
+    if request.method == "POST" and request.user.is_authenticated:
+        question_text = request.POST.get("question_text")
+        if question_text:
+            # Если создали модель Question
+            # Question.objects.create(
+            #     author=request.user,
+            #     text=question_text,
+            #     is_visible=False  # На модерации
+            # )
+            messages.success(request, "Ваш вопрос отправлен на модерацию!")
+            return redirect("questions")
+    
+    # Получаем вопросы (если есть модель)
+    # questions_list = Question.objects.filter(is_visible=True)
+    
+    return render(request, "questions.html", {
+        # 'questions': questions_list
+    })

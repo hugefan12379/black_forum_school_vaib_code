@@ -20,6 +20,7 @@ urlpatterns = [
     path("forum/create/", views.forum_create_post, name="forum_create_post"),
     path("forum/post/<int:post_id>/", views.forum_post_detail, name="forum_post_detail"),
     path("forum/", views.forum_home, name="forum_home"),
+    path("questions/", views.questions, name="questions"),
 
 
 ]

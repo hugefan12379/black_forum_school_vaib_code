@@ -7,7 +7,7 @@ body {
 
 /* ===== КАРТОЧКИ ===== */
 .card-dark {
-    background: rgba(45, 52, 66, 0.92);
+    background: rgba(178, 186, 201, 0.92);
     border-radius: 16px;
     border: 1px solid rgba(180, 200, 255, 0.18);
     box-shadow: 0 10px 30px rgba(0,0,0,0.35);
@@ -40,7 +40,7 @@ h2, h3, h4 {
 
 /* ===== КОММЕНТАРИИ ===== */
 .comment {
-    border-bottom: 1px solid rgba(255,255,255,0.12);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.574);
     padding: 12px 0;
 }
 
@@ -55,7 +55,7 @@ h2, h3, h4 {
 
 .comment-time {
     font-size: 12px;
-    color: #bfc7ff;
+    color: #b8c0fedf;
 }
 
 /* ===== КНОПКИ ===== */

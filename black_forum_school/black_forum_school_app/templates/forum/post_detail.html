@@ -5,11 +5,39 @@
     <meta charset="UTF-8">
     <title>{{ post.title }}</title>
 
-    <!-- Bootstrap (если уже есть глобально — можно убрать) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Стили форума -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{% static 'css/forum.css' %}">
+    
+    <style>
+        body {
+            background: #0f172a;
+            color: #e5e7eb;
+        }
+        .card-dark {
+            background: #020617;
+            border: 1px solid #1e293b;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .topic-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            margin-right: 0.25rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: white;
+            text-decoration: none;
+        }
+        .comment {
+            border-bottom: 1px solid #c7c8a7cd;
+            padding: 10px 0;
+        }
+        .comment:last-child {
+            border-bottom: none;
+        }
+    </style>
 </head>
 <body>
 
@@ -17,39 +45,54 @@
 
     <!-- ПОСТ -->
     <div class="card-dark">
+        
+        <div class="d-flex justify-content-between align-items-start">
+            <h2>{{ post.title }}</h2>
+            <a href="/forum/" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-arrow-left"></i> Назад
+            </a>
+        </div>
+        
+        <!-- Темы поста -->
+        {% if post.topics.all %}
+        <div class="mb-3">
+            <i class="bi bi-tags"></i>
+            {% for topic in post.topics.all %}
+            <a href="/forum/?topic={{ topic.slug }}" class="topic-badge bg-{{ topic.color }}">
+                {{ topic.name }}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
 
-        <h2>{{ post.title }}</h2>
-
-        <div class="text-muted mb-2">
-            Автор: {{ post.author.username }}
-            • {{ post.created_at|date:"d.m.Y H:i" }}
+        <div class="text-muted mb-3">
+            <i class="bi bi-person"></i> {{ post.author.username }}
+            <i class="bi bi-clock ms-2"></i> {{ post.created_at|date:"d.m.Y H:i" }}
         </div>
 
         {% if post.image %}
-            <img src="{{ post.image.url }}" class="article-image img-fluid mb-3">
+            <div class="mb-3">
+                <img src="{{ post.image.url }}" class="img-fluid rounded" style="max-width: 100%;">
+            </div>
         {% endif %}
 
-        <div class="article-content">
+        <div class="article-content mt-3">
             {{ post.content|linebreaks }}
         </div>
-
-        <a href="{% url 'forum_home' %}" class="btn btn-outline-light btn-sm mt-3">
-            ← Назад к форуму
-        </a>
 
     </div>
 
     <!-- КОММЕНТАРИИ -->
     <div class="card-dark mt-4">
-        <h5>💬 Комментарии ({{ comments.count }})</h5>
+        <h5><i class="bi bi-chat"></i> Комментарии ({{ comments.count }})</h5>
 
         {% if comments %}
             {% for c in comments %}
                 <div class="comment mt-3">
                     <div class="comment-author fw-bold">
-                        {{ c.author.username }}
+                        <i class="bi bi-person-circle"></i> {{ c.author.username }}
                         <span class="text-muted small">
-                            • {{ c.created_at|date:"d.m.Y H:i" }}
+                            {{ c.created_at|date:"d.m.Y H:i" }}
                         </span>
                     </div>
                     <div class="mt-1">
@@ -58,28 +101,31 @@
                 </div>
             {% endfor %}
         {% else %}
-            <div class="text-muted mt-2">Комментариев пока нет</div>
+            <div class="text-muted mt-3">Комментариев пока нет</div>
         {% endif %}
     </div>
 
     <!-- ДОБАВИТЬ КОММЕНТАРИЙ -->
     {% if user.is_authenticated %}
         <div class="card-dark mt-4">
-            <h5>✍️ Добавить комментарий</h5>
+            <h5><i class="bi bi-pencil"></i> Добавить комментарий</h5>
             <form method="post">
                 {% csrf_token %}
                 <textarea
                     name="text"
-                    class="form-control mb-2"
+                    class="form-control mb-3"
                     rows="3"
-                    placeholder="Напиши комментарий..."
+                    placeholder="Напишите комментарий..."
                     required></textarea>
-                <button class="btn btn-primary">Отправить</button>
+                <button class="btn btn-primary">
+                    <i class="bi bi-send"></i> Отправить
+                </button>
             </form>
         </div>
     {% endif %}
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
