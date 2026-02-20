@@ -343,3 +343,31 @@ def questions(request):
     return render(request, "questions.html", {
         # 'questions': questions_list
     })
+
+
+
+
+
+
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from .models import Question
+
+@login_required
+def questions_view(request):
+    if request.method == 'POST':
+        question_text = request.POST.get('question_text')
+        if question_text and question_text.strip():
+            # Создаем вопрос с привязкой к текущему пользователю
+            Question.objects.create(
+                author=request.user,
+                text=question_text.strip()
+            )
+            return redirect('questions')  # Перенаправляем на ту же страницу
+    
+    # Получаем все вопросы для отображения
+    questions = Question.objects.all()
+    
+    return render(request, 'questions.html', {
+        'questions': questions
+    })

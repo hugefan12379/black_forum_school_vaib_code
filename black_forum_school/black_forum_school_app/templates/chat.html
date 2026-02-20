@@ -31,6 +31,11 @@
       color: var(--text);
       min-height: 100vh;
       overflow-x: hidden;
+      /* ИСПРАВЛЕНИЕ: фиксируем body на всю высоту, запрещаем скролл */
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
 
     .topbar{
@@ -40,6 +45,8 @@
       background: rgba(21,25,35,.92);
       backdrop-filter: blur(10px);
       border-bottom: 1px solid var(--border);
+      /* ИСПРАВЛЕНИЕ: гарантируем, что topbar не сжимается */
+      flex-shrink: 0;
     }
 
     .topbar-inner{
@@ -58,7 +65,10 @@
       font-weight: 600;
       opacity: .9;
     }
-    .top-left a:hover{ opacity: 1; }
+    .top-left a:hover{ 
+      opacity: 1; 
+      
+    }
 
     .top-center{
       text-align: center;
@@ -101,6 +111,7 @@
       display: inline-block;
     }
 
+    /* ИСПРАВЛЕНИЕ: page занимает оставшуюся высоту и тоже flex-контейнер */
     .page{
       max-width: 1200px;
       margin: 0 auto;
@@ -108,6 +119,9 @@
       display: grid;
       grid-template-columns: 220px 1fr 220px;
       gap: 14px;
+      flex: 1;
+      min-height: 0;  /* важно для Firefox */
+      width: 100%;
     }
 
     @media (max-width: 992px){
@@ -180,6 +194,7 @@
       100% { transform: translateY(-140%); opacity: 0; }
     }
 
+    /* ИСПРАВЛЕНИЕ: chat-card растягивается на всю доступную высоту */
     .chat-card{
       border-radius: var(--radius);
       border: 1px solid var(--border);
@@ -189,7 +204,7 @@
       overflow: hidden;
       display: grid;
       grid-template-rows: auto 1fr auto;
-      min-height: calc(100vh - 120px);
+      height: 100%;
     }
 
     .chat-header{
@@ -199,6 +214,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
+      flex-shrink: 0;
     }
 
     .chat-header .hint{
@@ -215,12 +231,14 @@
       display: inline-block;
     }
 
+    /* ИСПРАВЛЕНИЕ: messages занимает всю доступную высоту и скроллится */
     .messages{
       padding: 14px;
-      overflow: auto;
+      overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: 12px;
+      min-height: 0;  /* критично для правильной работы overflow */
     }
 
     .msg{
@@ -332,6 +350,7 @@
       border-top: 1px solid var(--border);
       padding: 12px 14px;
       background: rgba(17,21,32,.55);
+      flex-shrink: 0;
     }
 
     .composer-row{
@@ -451,8 +470,8 @@
   <header class="topbar">
     <div class="topbar-inner">
       <div class="top-left">
-        <a href="/">главная страница</a>
-      </div>
+  <a href="/" class="pill">главная страница</a>
+</div>
 
       <div class="top-center">
         не официальный сайт школы
@@ -562,6 +581,7 @@
                 class="msg-input"
                 name="text"
                 id="text"
+                maxlength="512"
                 placeholder="введите сообщение без негатива..."
               ></textarea>
 
@@ -763,9 +783,20 @@
       }
     }, 10000);
 
-    // ====== Autoscroll ======
+    // ====== Auto-scroll to bottom ======
     const msgBox = document.getElementById("messages");
-    if (msgBox) msgBox.scrollTop = msgBox.scrollHeight;
+    function scrollToBottom() {
+      msgBox.scrollTop = msgBox.scrollHeight;
+    }
+    
+    // При загрузке страницы скроллим вниз
+    if (msgBox) {
+      scrollToBottom();
+      
+      // Также скроллим вниз после любых изменений содержимого
+      const observer = new MutationObserver(scrollToBottom);
+      observer.observe(msgBox, { childList: true, subtree: true, characterData: true });
+    }
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>

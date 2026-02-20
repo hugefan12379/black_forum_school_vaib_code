@@ -179,3 +179,40 @@ class MafiaDayVote(models.Model):
 
     def __str__(self):
         return f"Room {self.room.room_number} day {self.day_number}: {self.voter_id}->{self.target_id}"
+
+
+
+
+
+
+
+        
+from django.db import models
+from django.contrib.auth.models import User
+
+class Question(models.Model):
+    author = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        verbose_name='Автор',
+        related_name='questions'
+    )
+    text = models.TextField(verbose_name='Текст вопроса')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+    is_answered = models.BooleanField(default=False, verbose_name='Отвечен')
+    
+    class Meta:
+        verbose_name = 'Вопрос'
+        verbose_name_plural = 'Вопросы'
+        ordering = ['-created_at']  # Сначала новые вопросы
+    
+    def __str__(self):
+        return f'Вопрос от {self.author.username} ({self.created_at.strftime("%d.%m.%Y")})'
+    
+    def author_name(self):
+        """Возвращает имя автора или username, если имя не указано"""
+        return self.author.first_name or self.author.username
+    
+    def author_email(self):
+        """Возвращает email автора"""
+        return self.author.email

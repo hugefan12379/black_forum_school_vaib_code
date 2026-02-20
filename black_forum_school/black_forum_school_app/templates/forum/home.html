@@ -10,12 +10,12 @@
 </div>
 
 {% if posts %}
-    <div class="row">
+    <div class="row " >
         {% for post in posts %}
-        <div class="col-md-6 mb-4">
+        <div class="col-md-6 mb-4" >
             <div class="card h-100">
                 <div class="card-body">
-                    <h5 class="card-title">{{ post.title }}</h5>
+                    <h5 class="card-title" style="color: white; text-decoration: none;">{{ post.title }}</h5>
                     
                     <!-- Темы поста -->
                     {% if post.topics.all %}
@@ -30,7 +30,7 @@
                     </div>
                     {% endif %}
                     
-                    <p class="card-text text-muted">
+                    <p class="card-text text-white ">
                         {{ post.content|truncatechars:120 }}
                     </p>
                     
@@ -41,9 +41,9 @@
                     {% endif %}
                     
                     <div class="d-flex justify-content-between align-items-center mt-3">
-                        <small class="text-muted">
-                            <i class="bi bi-person"></i> {{ post.author.username }}<br>
-                            <i class="bi bi-clock"></i> {{ post.created_at|date:"d.m.Y H:i" }}
+                        <small class="text-muted" style="color: rgb(174, 158, 158); text-decoration: none;">
+                            <i class="bi bi-person" style="color: rgb(177, 166, 166); text-decoration: none;"></i> <a style="color: rgb(133, 130, 130); text-decoration: none;">{{ post.author.username }}</a> <br>
+                            <i class="bi bi-clock" style="color: rgb(214, 199, 199); text-decoration: none;"></i> <a style="color: rgb(114, 112, 112); text-decoration: none;">{{ post.created_at|date:"d.m.Y H:i" }}</a> 
                         </small>
                         <a href="/forum/post/{{ post.id }}/" class="btn btn-sm btn-outline-primary">
                             Читать <i class="bi bi-arrow-right"></i>

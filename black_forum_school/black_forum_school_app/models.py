@@ -179,9 +179,10 @@ class Question(models.Model):
     author = models.ForeignKey(
         User, 
         on_delete=models.CASCADE, 
-        related_name='questions',
-        verbose_name="Автор"
+        verbose_name='Автор',
+        related_name='forum_questions'  # ← ИЗМЕНИТЕ ЗДЕСЬ
     )
+    # ... остальные поля
     text = models.TextField(verbose_name="Текст вопроса")
     is_answered = models.BooleanField(
         default=False, 
