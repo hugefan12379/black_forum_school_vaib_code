@@ -36,11 +36,13 @@
 
 <!-- НАВИГАЦИЯ -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-4">
-    <a class="navbar-brand" href="/">🏫 Школа</a>
+    <a class="navbar-brand" href="/">главная</a>
     <div class="navbar-nav">
-        <a class="nav-link" href="/forum/">Форум</a>
-        <a class="nav-link" href="/chat/">Чат</a>
-        <a class="nav-link" href="/mafia/">Мафия</a>
+        <a class="nav-link" href="{% url 'questions' %}">⚖ Правила и вопросы</a>
+        <a class="nav-link" href="#">📜 История школы</a>
+        <a class="nav-link" href="/chat/">💬 Общий чат</a>
+        <a class="nav-link" href="/mafia/">🎭 Мафия</a>
+             
     </div>
 </nav>
 

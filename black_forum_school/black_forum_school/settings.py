@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-jbx#*5by53b$a4l_+0k(a%6%1tsc1nufnia6na#bo(v6af+tn)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['192.168.0.143']
 
 
 # Application definition
@@ -142,6 +142,7 @@ ALLOWED_HOSTS = [
     ".ngrok-free.app",
     ".ngrok-free.dev",
     ".ngrok.io",
+    "192.168.0.143"
 ]
 
 CSRF_TRUSTED_ORIGINS = [

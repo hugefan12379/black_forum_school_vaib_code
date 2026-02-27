@@ -84,8 +84,52 @@ def is_image_nsfw(uploaded_file) -> bool:
         )
     except Exception:
         return False
+#регистрация:
+def index(request):
+    return render(request, "index.html")
+
+def auth(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+
+        user = authenticate(request, username=email, password=password)
+        print(user)
+
+        if user is not None:
+            login(request, user)
+
+            # Если пользователь есть
+            return JsonResponse({ 'status' : 'success'})
+        else:
+            # Если пользователя нету
+            return JsonResponse({ 'status' : 'error' })      
+    else:
+        return render(request, 'auth.html')
+
+def reg(request):
+    if request.method == "POST":
+        email = request.POST.get("email")
+        password = request.POST.get("password")
+        confirm = request.POST.get("confirm_password")
+
+        if password != confirm:
+            return JsonResponse({"status": "error", "message": "Пароли не совпадают"})
+
+        if User.objects.filter(username=email).exists():
+            return JsonResponse({"status": "error", "message": "Пользователь существует"})
+
+        User.objects.create_user(username=email, email=email, password=password)
+        return JsonResponse({"status": "success", "redirect": "/auth/"})
+
+    return render(request, "reg.html")
 
 
+def logout_view(request):
+    logout(request)
+    return redirect('index') # перенаправление
+
+'''
 # =========================
 # ОСНОВНЫЕ СТРАНИЦЫ
 # =========================
@@ -128,7 +172,7 @@ def reg(request):
 def logout_view(request):
     logout(request)
     return redirect("index")
-
+'''
 
 # =========================
 # ЧАТ
