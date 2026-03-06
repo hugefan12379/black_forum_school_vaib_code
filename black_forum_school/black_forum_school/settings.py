@@ -142,7 +142,9 @@ ALLOWED_HOSTS = [
     ".ngrok-free.app",
     ".ngrok-free.dev",
     ".ngrok.io",
-    "192.168.0.143"
+    "192.168.0.143",
+    "94.41.238.239",
+    '94.41.238.239',
 ]
 
 CSRF_TRUSTED_ORIGINS = [

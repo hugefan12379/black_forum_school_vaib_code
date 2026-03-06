@@ -1,7 +1,5 @@
 {% csrf_token %}
 {% load static %}
-{% extends 'navbar.html' %}
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -27,7 +25,7 @@
         }
     </style>
 </head>
-{% block content %}
+
 <body>
 <div class="auth">
     <div class="mb-3">
@@ -134,7 +132,4 @@ $(document).ready(function() {
 </script>
 
 </body>
-
-{% endblock%}
-{% extends 'footer.html' %}
 </html>

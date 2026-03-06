@@ -22,5 +22,4 @@ urlpatterns = [
     path("forum/", views.forum_home, name="forum_home"),
     path("questions/", views.questions, name="questions"),
 
-
 ]

@@ -1,7 +1,4 @@
-{% csrf_token %}
 {% load static %}
-{% extends 'navbar.html' %}
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -12,6 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
     <style>
         body {
             background: radial-gradient(1200px 600px at 20% 0%, #2a3446 0%, #151a22 55%, #0f1218 100%);
@@ -190,7 +188,7 @@
         }
     </style>
 </head>
-{% block content %}
+
 <body>
 
 <!-- HEADER -->
@@ -199,7 +197,56 @@
     <div class="site-title">❓ Вопросы и правила</div>
 </div>
 
+<!-- NAVBAR (такой же как в index.html) -->
+<nav class="navbar navbar-expand-xl navbar-dark bg-dark sticky-top">
+    <div class="container-fluid">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarWithDropdown">
+            <span class="navbar-toggler-icon"></span>
+        </button>
 
+        <div class="collapse navbar-collapse" id="navbarWithDropdown">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'index' %}">Главная</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'questions' %}">⚖ Правила и вопросы</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'chat' %}">💬 Общий чат</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'images' %}">📜 История школы</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'mafia_rooms' %}">🎭 Мафия</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-bold text-info" href="{% url 'forum_home' %}">
+                        📰 Форум
+                    </a>
+                </li>
+            </ul>
+
+            <ul class="navbar-nav">
+                {% if user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ user.email }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Выйти</a></li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'auth' %}"><i class="bi bi-box-arrow-in-right"></i> Вход / Регистрация</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
 
 <!-- ОСНОВНОЙ КОНТЕНТ -->
 <div class="container my-5">
@@ -442,5 +489,4 @@
             </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>

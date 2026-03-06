@@ -1,0 +1,61 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Подпольный сайт школы{% endblock %}</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <style>
+        body {
+            background: radial-gradient(1200px 600px at 20% 0%, #2a3446 0%, #151a22 55%, #0f1218 100%);
+            color: #fff;
+        }
+
+        .site-title {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 1px;
+        }
+
+        .news-card {
+            background: rgba(45, 52, 66, 0.92);
+            border: 1px solid rgba(180, 200, 255, 0.18);
+            border-radius: 14px;
+            padding: 16px;
+            height: 100%;
+        }
+
+        .news-card h5 {
+            font-weight: 700;
+        }
+
+        .forum-cta {
+            background: linear-gradient(135deg, #4f7cff, #6a5cff);
+            border-radius: 18px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .forum-cta h2 {
+            font-weight: 900;
+        }
+    </style>
+</head>
+
+<body>
+    {% include 'navbar.html' %}
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    {% include 'footer.html' %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
