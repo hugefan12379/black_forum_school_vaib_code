@@ -1,4 +1,7 @@
+{% csrf_token %}
 {% load static %}
+{% include 'navbar.html' %}
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -92,7 +95,7 @@
     }
   </style>
 </head>
-
+{% block content %}
 <body>
 
 <div class="container py-4">
@@ -739,4 +742,6 @@ let dayVoteActive = false;
 </script>
 
 </body>
+{% endblock%}
+{% include 'footer.html' %}
 </html>

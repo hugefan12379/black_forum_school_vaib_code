@@ -1,6 +1,6 @@
 {% csrf_token %}
 {% load static %}
-{% extends 'navbar.html' %}
+{% include 'navbar.html' %}
 
 <!DOCTYPE html>
 <html lang="ru">
@@ -194,10 +194,7 @@
 <body>
 
 <!-- HEADER -->
-<div class="container py-4 text-center">
-    <img src="{% static 'images/logo_fake_locked.jpg' %}" width="110" class="mb-3 rounded">
-    <div class="site-title">❓ Вопросы и правила</div>
-</div>
+<!-- none_header -->
 
 
 
@@ -206,7 +203,7 @@
 
     <!-- ЗАГОЛОВОК -->
     <div class="text-center mb-5">
-        <h1 class="display-4 fw-bold">Правила и частые вопросы</h1>
+        <h1 class="display-4 fw-bold">Правила и часто задоваемые вопросы</h1>
         <p class="lead text-secondary">Здесь собраны основные правила сайта и ответы на популярные вопросы</p>
     </div>
 
@@ -418,29 +415,8 @@
 
 </div>
 
-<!-- FOOTER -->
-<footer class="text-center py-4 text-secondary">
-    <p>© 2025 • Подпольный сайт школы</p>
-    <p>Сайт не является официальным сайтом школы</p>
-    <a href="https://vk.com/rvmeste_ufa" class="text-secondary">Официальная группа ВК</a>
-</footer>
-<div class="container">
-                <div class="row justify-content-center">
-                {% for item in items_list %}
-                    <div class="col-3">
-                        <div class="card" style="width: 18rem;">
-                            <img src={{ item.photo.url }} class="card-img-top" alt={{ item.item_title }}>
-                            <div class="card-body">
-                                <h5 class="card-title">{{ item.item_title }}</h5>
-                                <p class="card-text">S{{ item.description }}</p>
-                                <a href="/item/{{ item.id }}" class="card-button">Подробнее</a>
-                            </div>
-                        </div>
-                    </div>
-                {% endfor %}
-                </div>
-            </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
+{% endblock %}
+{% include 'footer.html' %}
 </html>

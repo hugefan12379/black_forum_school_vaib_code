@@ -1,6 +1,6 @@
 {% csrf_token %}
 {% load static %}
-{% extends 'navbar.html' %}
+{% include 'navbar.html' %}
 
 <!DOCTYPE html>
 <html lang="ru">
@@ -136,5 +136,5 @@ $(document).ready(function() {
 </body>
 
 {% endblock%}
-{% extends 'footer.html' %}
+{% include 'footer.html' %}
 </html>

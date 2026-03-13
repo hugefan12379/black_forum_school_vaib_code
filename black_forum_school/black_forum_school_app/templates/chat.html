@@ -1,6 +1,6 @@
 {% csrf_token %}
 {% load static %}
-{% extends 'navbar.html' %}
+{% include 'navbar.html' %}
 
 <!DOCTYPE html>
 <html lang="ru">
@@ -469,12 +469,7 @@
 {% block content %}
 <body>
 
-  <!-- ===== Topbar ===== -->
-  <header class="topbar">
-    <div class="topbar-inner">
-      <div class="top-left">
-  <a href="/" class="pill">главная страница</a>
-</div>
+
 
       <div class="top-center">
         не официальный сайт школы
@@ -805,6 +800,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-{% endblock%}
-{% extends 'footer.html' %}
+{% endblock %}
+{% include 'footer.html' %}
 </html>
