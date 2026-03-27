@@ -107,20 +107,50 @@ def auth(request):
     return render(request, "auth.html")
 
 
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.models import User
+from django.http import JsonResponse
+from django.shortcuts import render, redirect
+
+
+from django.contrib.auth import login
+from django.http import JsonResponse
+from django.contrib.auth.models import User
+from django.shortcuts import render
+
 def reg(request):
     if request.method == "POST":
         email = request.POST.get("email")
         password = request.POST.get("password")
         confirm = request.POST.get("confirm_password")
+        first_name = request.POST.get("first_name", "")
+        last_name = request.POST.get("last_name", "")
 
         if password != confirm:
-            return JsonResponse({"status": "error", "message": "Пароли не совпадают"})
+            return JsonResponse({"status": "error", "message": "Пароли не совпадают"}, status=400)
 
         if User.objects.filter(username=email).exists():
-            return JsonResponse({"status": "error", "message": "Пользователь существует"})
+            return JsonResponse({"status": "error", "message": "Пользователь с такой почтой уже существует"}, status=400)
 
-        User.objects.create_user(username=email, email=email, password=password)
-        return JsonResponse({"status": "success", "redirect": "/auth/"})
+        try:
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name
+            )
+            login(request, user)                    # автоматический вход
+
+            return JsonResponse({
+                "status": "success", 
+                "redirect": "/"                     # главная страница
+            })
+        except Exception:
+            return JsonResponse({
+                "status": "error", 
+                "message": "Ошибка при создании аккаунта. Попробуйте позже."
+            }, status=400)
 
     return render(request, "reg.html")
 
@@ -371,3 +401,15 @@ def questions_view(request):
     return render(request, 'questions.html', {
         'questions': questions
     })
+
+
+def account(request):
+    print(request.user.id)
+    context = {
+
+        'username' : request.user.username,
+        'first_name' : request.user.first_name,
+        'last_name' : request.user.last_name,
+        'email' : request.user.email,
+    }
+    return render(request, 'account.html', context)

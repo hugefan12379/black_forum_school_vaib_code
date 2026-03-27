@@ -1,96 +1,152 @@
-{% csrf_token %}
+{% extends 'base.html' %}
 {% load static %}
-{% extends 'navbar.html' %}
+{% block title %}Регистрация{% endblock %}
 
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Регистрация</title>
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/header.css' %}">
+<link rel="stylesheet" href="{% static 'css/reg.css' %}">
+{% endblock %}
 
-    <!-- Стили -->
-    <link rel="stylesheet" href="{% static 'css/header.css' %}">
-    <link rel="stylesheet" href="{% static 'css/reg.css' %}">
-    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
-
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
-          integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
-          integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
-          crossorigin="anonymous" referrerpolicy="no-referrer">
-</head>
 {% block content %}
-<body>
-
-    <div class="container">
-        <h1>Регистрация</h1>
-        <form action="/reg/" method="POST" id="reg-form">
-            {% csrf_token %}
-
-        
-
-            <div class="form-group">
-                <label for="first-name" class="form-label">Имя</label>
-                <input type="text" id="first-name" name="first_name" class="form-control" placeholder="Введите имя">
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            
+            <div class="auth-card p-4 p-md-5 rounded-3">
+                <h2 class="text-center mb-4 text-light">Регистрация</h2>
+                
+                <form action="/reg/" method="POST" id="reg-form">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="first-name" class="form-label text-light">Имя</label>
+                        <input type="text" 
+                               id="first-name" 
+                               name="first_name" 
+                               class="form-control bg-dark text-light border-secondary" 
+                               placeholder="Введите имя" 
+                               required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="last-name" class="form-label text-light">Фамилия</label>
+                        <input type="text" 
+                               id="last-name" 
+                               name="last_name" 
+                               class="form-control bg-dark text-light border-secondary" 
+                               placeholder="Введите фамилию" 
+                               required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label text-light">Электронная почта</label>
+                        <input type="email" 
+                               id="email" 
+                               name="email" 
+                               class="form-control bg-dark text-light border-secondary" 
+                               placeholder="Введите e-mail" 
+                               required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label text-light">Пароль</label>
+                        <input type="password" 
+                               id="password" 
+                               name="password" 
+                               class="form-control bg-dark text-light border-secondary" 
+                               placeholder="Введите пароль (минимум 6 символов)" 
+                               minlength="6" 
+                               required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label text-light">Подтвердите пароль</label>
+                        <input type="password" 
+                               id="confirm_password" 
+                               name="confirm_password" 
+                               class="form-control bg-dark text-light border-secondary" 
+                               placeholder="Повторите пароль" 
+                               required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="class_info" class="form-label text-light">Класс (номер и буква)</label>
+                        <input type="text" 
+                               id="class_info" 
+                               name="class_info" 
+                               class="form-control bg-dark text-light border-secondary" 
+                               placeholder="Например: 10А" 
+                               maxlength="3">
+                    </div>
+                    
+                    <div class="mb-4 form-check">
+                        <input type="checkbox" 
+                               id="agree" 
+                               name="agree" 
+                               class="form-check-input bg-dark border-secondary" 
+                               required>
+                        <label for="agree" class="form-check-label text-light">
+                            Я согласен с <a href="/question" class="text-info">условиями использования</a>
+                        </label>
+                    </div>
+                    
+                    <button type="submit" id="reg-button" class="btn btn-primary w-100 py-2">
+                        Зарегистрироваться
+                    </button>
+                    
+                    <div class="text-center mt-4">
+                        <a href="/auth" class="text-info text-decoration-none">
+                            Уже есть аккаунт? Войти
+                        </a>
+                    </div>
+                </form>
             </div>
-
-            <div class="form-group">
-                <label for="last-name" class="form-label">Фамилия</label>
-                <input type="text" id="last-name" name="last_name" class="form-control" placeholder="Введите фамилию">
-            </div>
-
-            <div class="form-group">
-                <label for="email" class="form-label">Электронная почта</label>
-                <input type="email" id="email" name="email" class="form-control" required placeholder="Введите e‑mail">
-            </div>
-
-            <div class="form-group">
-                <label for="password" class="form-label">Пароль</label>
-                <input type="password" id="password" name="password" class="form-control" required minlength="6" placeholder="Введите пароль">
-            </div>
-
-            <div class="form-group">
-                <label for="confirm_password" class="form-label">Подтвердите пароль</label>
-                <input type="password" id="confirm_password" name="confirm_password" class="form-control" required placeholder="Повторите пароль">
-            </div>
-
-            <!-- Новое поле: номер и буква класса -->
-            <div class="form-group">
-                <label for="class_info" class="form-label">Номер и буква класса</label>
-                <input type="text" id="class_info" name="class_info" class="form-control" placeholder="Например: 10А" maxlength="3">
-            </div>
-
-            <div class="checkbox-group">
-                <input type="checkbox" id="agree" name="agree" required>
-                <label for="agree">Я согласен с <a href="/question">условиями использования</a></label>
-            </div>
-
-            <button type="submit" id="reg-button" class="btn btn-dark">
-    Зарегистрироваться
-</button>
-
-
-            <div class="links">
-                <a href="/auth">Уже есть аккаунт? Войти</a>
-            </div>
-        </form>
+        </div>
     </div>
+</div>
 
-    <!-- Скрипты -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    {% comment %} <script src="{% static 'js/nav.js' %}"></script> {% endcomment %}
-    {% comment %} <script src="{% static 'js/footer.js' %}"></script> {% endcomment %}
-    {% comment %} <script src="{% static 'js/reg.js' %}"></script> {% endcomment %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('#reg-form').on('submit', function(e) {
+        e.preventDefault();   // ← Очень важно! Отключаем обычную отправку формы
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
-            integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
-           
-</body>
-{% endblock%}
+        // Скрываем предыдущие ошибки
+        $('#error-container').addClass('d-none').empty();
+
+        $.ajax({
+            url: '/reg/',
+            type: 'POST',
+            data: $(this).serialize(),   // автоматически собирает все поля формы
+            dataType: 'json',            // ← Говорим jQuery, что ожидаем JSON
+            success: function(response) {
+                if (response.status === 'success') {
+                    // Успех — переходим на главную
+                    window.location.href = response.redirect || '/';
+                } else {
+                    // Ошибка от сервера (пароли не совпадают, пользователь существует и т.д.)
+                    $('#error-container')
+                        .html('<div class="alert alert-danger">' + response.message + '</div>')
+                        .removeClass('d-none');
+                }
+            },
+            error: function(xhr) {
+                let msg = 'Произошла неизвестная ошибка. Попробуйте позже.';
+                try {
+                    const resp = JSON.parse(xhr.responseText);
+                    if (resp.message) msg = resp.message;
+                } catch(e) {}
+                $('#error-container')
+                    .html('<div class="alert alert-danger">' + msg + '</div>')
+                    .removeClass('d-none');
+            }
+        });
+    });
+});
+</script>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}
+
 {% include 'footer.html' %}
-</html>

@@ -48,7 +48,10 @@
                             {{ user.email }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="{% url 'logout' %}">Выйти</a></li>
+                            <li><a class="dropdown-item" href="{% url 'logout' %}">Выйти</a>
+                                <a class="dropdown-item" href="{% url 'account' %}">Профиль</a>
+                            </li>
+
                         </ul>
                     </li>
                 {% else %}

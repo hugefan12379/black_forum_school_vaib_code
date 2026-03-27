@@ -1,68 +1,75 @@
-{% csrf_token %}
+{% extends 'base.html' %}
 {% load static %}
-{% include 'navbar.html' %}
+{% block title %}Вход в систему{% endblock %}
 
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Вход в систему</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-    <link href="css/auth.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-    <link rel="stylesheet" href={% static 'css/auth.css' %}>
-    <style>
-        /* Небольшие дополнительные стили для сообщений об ошибках */
-        .error-message {
-            color: #dc3545;
-            font-size: 0.875rem;
-            margin-top: 0.25rem;
-            display: none;
-        }
-        .success-message {
-            color: #28a745;
-            font-size: 0.875rem;
-            margin-top: 0.25rem;
-            display: none;
-        }
-    </style>
-</head>
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/header.css' %}">
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+{% endblock %}
+
 {% block content %}
-<body>
-<div class="auth">
-    <div class="mb-3">
-        <label for="email" class="form-label">Электронная почта</label>
-        <input type="email" class="form-control" id="email" name="email" aria-describedby="emailHelp" value="{{ request.GET.email }}" required>
-        <div id="emailHelp" class="form-text">Мы никому не расскажем вашу почту</div>
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5 col-lg-4">
+            
+            <div class="auth-card p-4 rounded-3">
+                <h2 class="text-center mb-4 text-light">Вход в аккаунт</h2>
+                
+                <div class="mb-3">
+                    <label for="email" class="form-label text-light">Электронная почта</label>
+                    <input type="email" 
+                           class="form-control bg-dark text-light border-secondary" 
+                           id="email" 
+                           name="email" 
+                           value="{{ request.GET.email }}" 
+                           required>
+                    <div id="emailHelp" class="form-text text-secondary">
+                        Мы никому не расскажем вашу почту
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="password" class="form-label text-light">Пароль</label>
+                    <input type="password" 
+                           class="form-control bg-dark text-light border-secondary" 
+                           id="password" 
+                           name="password" 
+                           value="{{ request.GET.password }}" 
+                           required>
+                </div>
+                
+                <div class="mb-3 form-check">
+                    <input type="checkbox" 
+                           class="form-check-input bg-dark border-secondary" 
+                           id="remember-me" 
+                           name="remember_me">
+                    <label class="form-check-label text-light" for="remember-me">
+                        Запомнить меня
+                    </label>
+                </div>
+                
+                <!-- Сообщения об ошибках и успехе -->
+                <div id="error-container" class="error-message alert alert-danger d-none"></div>
+                <div id="success-container" class="success-message alert alert-success d-none"></div>
+                
+                <button type="button" id="auth-button" class="btn btn-primary w-100 py-2 mt-2">
+                    Войти
+                </button>
+                
+                <div class="text-center mt-4">
+                    <a href="/reg" class="text-info text-decoration-none">
+                        Нет аккаунта? Зарегистрироваться
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
-    
-    <div class="mb-3">
-        <label for="password" class="form-label">Пароль</label>
-        <input type="password" class="form-control" id="password" name="password" value="{{ request.GET.password }}" required>
-    </div>
-    
-    <div class="mb-3 form-check">
-        <input type="checkbox" class="form-check-input" id="remember-me" name="remember_me">
-        <label class="form-check-label" for="remember-me">Запомнить меня</label>
-    </div>
-    
-    <!-- Контейнер для сообщений об ошибках -->
-    <div id="error-container" class="error-message"></div>
-    
-    <!-- Контейнер для сообщений об успехе -->
-    <div id="success-container" class="success-message"></div>
-    
-    <button type="button" id="auth-button" class="btn btn-primary">Подтвердить</button>
-    <br>
-    <a href="/reg">Нет аккаунта? Зарегистрироваться</a>
 </div>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script src="{% static 'js/run_awey.js' %}"></script>
-
 <script>
 $(document).ready(function() {
-    // Функция для получения параметра из URL
     function getUrlParameter(name) {
         name = name.replace(/[\[\]]/g, '\\$&');
         var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
@@ -72,33 +79,35 @@ $(document).ready(function() {
         return decodeURIComponent(results[2].replace(/\+/g, ' '));
     }
 
-    // Проверяем, есть ли сообщение об успешной регистрации
+    // Показываем сообщение об успешной регистрации
     var message = getUrlParameter('message');
     if (message) {
-        $('#success-container').text(decodeURIComponent(message)).show();
-        // Автоматически скрываем через 5 секунд
+        $('#success-container')
+            .text(decodeURIComponent(message))
+            .removeClass('d-none')
+            .show();
+        
         setTimeout(function() {
             $('#success-container').fadeOut();
         }, 5000);
     }
 
-    // Обработка клика по кнопке подтверждения
+    // Обработка входа
     $('#auth-button').on('click', function() {
-        // Скрываем предыдущие сообщения
-        $('#error-container').hide().empty();
-        $('#success-container').hide().empty();
-        
-        var email = $('#email').val();
-        var password = $('#password').val();
+        $('#error-container').addClass('d-none').empty();
+        $('#success-container').addClass('d-none').empty();
+
+        var email = $('#email').val().trim();
+        var password = $('#password').val().trim();
         var rememberMe = $('#remember-me').is(':checked');
-        
-        // Валидация на клиенте
+
         if (!email || !password) {
-            $('#error-container').text('Заполните все поля').show();
+            $('#error-container')
+                .text('Заполните все поля')
+                .removeClass('d-none');
             return;
         }
-        
-        // Отправка AJAX-запроса
+
         $.ajax({
             url: '/auth/',
             type: 'POST',
@@ -110,31 +119,27 @@ $(document).ready(function() {
             },
             success: function(response) {
                 if (response.status === 'success') {
-                    // Успешный вход - перенаправляем на главную
                     window.location.href = response.redirect;
                 } else {
-                    // Ошибка - показываем сообщение
-                    $('#error-container').text(response.message).show();
+                    $('#error-container')
+                        .text(response.message)
+                        .removeClass('d-none');
                 }
             },
-            error: function(xhr, status, error) {
-                $('#error-container').text('Произошла ошибка при отправке запроса').show();
-                console.error('Error:', error);
+            error: function() {
+                $('#error-container')
+                    .text('Произошла ошибка при отправке запроса')
+                    .removeClass('d-none');
             }
         });
     });
 
-    // Обработка нажатия Enter в полях ввода
+    // Enter для отправки
     $('#email, #password').on('keypress', function(e) {
-        if (e.which === 13) { // Enter key
+        if (e.which === 13) {
             $('#auth-button').click();
         }
     });
 });
 </script>
-
-</body>
-
-{% endblock%}
-{% include 'footer.html' %}
-</html>
+{% endblock %}
