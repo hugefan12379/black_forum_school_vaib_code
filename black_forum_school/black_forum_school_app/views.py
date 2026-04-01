@@ -130,7 +130,7 @@ def reg(request):
             return JsonResponse({"status": "error", "message": "Пароли не совпадают"}, status=400)
 
         if User.objects.filter(username=email).exists():
-            return JsonResponse({"status": "error", "message": "Пользователь с такой почтой уже существует"}, status=400)
+            return JsonResponse({"status": "error", "message": "Пользователь с такой почтой уже существует"}, status=406)
 
         try:
             user = User.objects.create_user(

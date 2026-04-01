@@ -90,7 +90,7 @@
                         </label>
                     </div>
                     
-                    <button type="submit" id="reg-button" class="btn btn-primary w-100 py-2">
+                    <button type="submit" id="reg-button" class="btn btn-primary w-100 py-2" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="right" data-bs-content="">
                         Зарегистрироваться
                     </button>
                     
@@ -132,9 +132,16 @@ $(document).ready(function() {
             },
             error: function(xhr) {
                 let msg = 'Произошла неизвестная ошибка. Попробуйте позже.';
+                
                 try {
                     const resp = JSON.parse(xhr.responseText);
                     if (resp.message) msg = resp.message;
+                    console.error('Ошибка:  ',  resp.message);
+                    let popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
+                    let popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+                        return new bootstrap.Popover(popoverTriggerEl)
+                    })
+                    $("#reg-button").attr("data-bs-content", resp.message)
                 } catch(e) {}
                 $('#error-container')
                     .html('<div class="alert alert-danger">' + msg + '</div>')
@@ -143,6 +150,9 @@ $(document).ready(function() {
         });
     });
 });
+
+
+
 </script>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
