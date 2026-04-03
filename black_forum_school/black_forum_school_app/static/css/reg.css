@@ -70,3 +70,8 @@
         .links a:hover {
             text-decoration: underline;
         }
+
+        .popover {
+            background-color: red;
+            color: red;
+        }

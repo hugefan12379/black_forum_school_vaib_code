@@ -205,3 +205,4 @@ class Question(models.Model):
 
     def __str__(self):
         return f"Вопрос от {self.author.username}: {self.text[:50]}"
+    
