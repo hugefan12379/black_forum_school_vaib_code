@@ -9,12 +9,12 @@ $('#auth-button').click(function (e) {
     let nextUrl = new URLSearchParams(window.location.search).get("next");
 
     if (!email) {
-        alert('Введите адрес почты');
+      //  alert('Введите адрес почты');
         return;
     }
 
     if (!password) {
-        alert('Введите пароль');
+    //    alert('Введите пароль');
         return;
     }
 
@@ -39,11 +39,11 @@ $('#auth-button').click(function (e) {
                     window.location.href = '/';
                 }
             } else {
-                alert(data.message || 'Ошибка входа');
+               // alert(data.message || 'Ошибка входа');
             }
         },
         error: function () {
-            alert('Ошибка входа. Проверь логин/пароль или регистрацию.');
+         //   alert('Ошибка входа. Проверь логин/пароль или регистрацию.');
         }
     });
 });
