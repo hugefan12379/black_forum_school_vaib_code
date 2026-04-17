@@ -163,10 +163,23 @@ def logout_view(request):
 # =========================
 # ЧАТ
 # =========================
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from django.shortcuts import get_object_or_404, render
+from django.http import JsonResponse
+from django.template.loader import render_to_string
+
+# Предполагаю, что форма у тебя уже есть. Если нет — создай простую или используй ModelForm.
+# from .forms import ChatMessageForm   # раскомментируй если используешь форму
+
+
 @login_required
 def chat_page(request):
     cleanup_old_chat_messages()
-    messages_qs = ChatMessage.objects.order_by("-created_at")[:200][::-1]
+    
+    # Сообщения от старых к новым (правильный порядок для чата)
+    messages_qs = ChatMessage.objects.order_by("created_at")[:200]
+    
     return render(request, "chat.html", {"messages": messages_qs})
 
 
@@ -177,34 +190,40 @@ def chat_send(request):
 
     text = (request.POST.get("text") or "").strip()
     upload = request.FILES.get("upload")
+    hide_from_sides = request.POST.get("hide_from_sides") == "1"   # если используешь этот флаг
 
     image = None
     file = None
 
     if upload:
         if upload.content_type.startswith("image/"):
-            if is_image_nsfw(upload):
+            if is_image_nsfw(upload):   # твоя функция проверки
                 return JsonResponse({"status": "error", "message": "18+ запрещено"})
             image = upload
         else:
             file = upload
 
     if not text and not image and not file:
-        return JsonResponse({"status": "error", "message": "Пусто"})
+        return JsonResponse({"status": "error", "message": "Нельзя отправить пустое сообщение 🙂"})
 
+    # Создаём сообщение
     msg = ChatMessage.objects.create(
         author=request.user,
         text=text,
         image=image,
         file=file,
+        # hide_from_sides=hide_from_sides,   # раскомментируй, если поле есть в модели
     )
+
+    # Рендерим HTML одного сообщения (для добавления в чат без перезагрузки)
+    message_html = render_to_string("chat/message_partial.html", {
+        "m": msg,
+        "user": request.user,
+    })
 
     return JsonResponse({
         "status": "success",
-        "id": msg.id,
-        "author": msg.author.username,
-        "text": msg.text,
-        "created_at": msg.created_at.strftime("%H:%M"),
+        "message_html": message_html,      # ← главное добавление
     })
 
 
@@ -212,11 +231,13 @@ def chat_send(request):
 @require_POST
 def chat_delete(request, msg_id):
     msg = get_object_or_404(ChatMessage, id=msg_id)
+
+    # Проверка прав (автор или staff)
     if msg.author != request.user and not request.user.is_staff:
-        return JsonResponse({"status": "error"})
+        return JsonResponse({"status": "error", "message": "Нет прав на удаление"})
+
     msg.delete()
     return JsonResponse({"status": "success"})
-
 
 # =========================
 # ФОРУМ
@@ -413,3 +434,13 @@ def account(request):
         'email' : request.user.email,
     }
     return render(request, 'account.html', context)
+
+
+
+
+
+
+
+
+def rules(request):
+    return render(request, "rules.html")
