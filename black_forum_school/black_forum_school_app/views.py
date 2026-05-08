@@ -1,17 +1,33 @@
 from django.shortcuts import render, redirect, get_object_or_404
+
+from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
+from django.http import JsonResponse, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.core.mail import send_mail
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.conf import settings
+
+
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.models import User
+from django.core.mail import send_mail 
+from .models import EmailDigest, EmailCode
+from django.core.validators import validate_email
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta
 from django.contrib import messages
-
+from django.utils import timezone
+from datetime import timedelta
 from .models import ChatMessage, ForumPost, ForumComment, Topic  # Добавлен импорт Topic
 from .utils.nudenet_check import check_image_safe
-
+import random
+import threading
 
 # =========================
 # NudeNet (чат)
@@ -125,7 +141,36 @@ def reg(request):
         confirm = request.POST.get("confirm_password")
         first_name = request.POST.get("first_name", "")
         last_name = request.POST.get("last_name", "")
+        
+        user = User.objects.create_user(
+            username = email, 
+            email = email, 
+            password = password, 
+            first_name = first_name, 
+            last_name = last_name,
+            is_active = False
+        )
 
+        code = str(random.randint(100000, 999999))
+
+        EmailCode.objects.create(
+            user = user,
+            code = code
+        )
+
+        # send_mail(
+        #     'Продукты 24/7: код подтверждения',
+        #     f'Ваш код подтверждения: {code}',
+        #     'edsuyargulov@yandex.ru',
+        #     [email],
+        #     fail_silently=False,
+        # )
+
+        threading.Thread(
+            target=send_email_code_async,
+            args=(email, code)
+        ).start()        
+    
         if password != confirm:
             return JsonResponse({"status": "error", "message": "Пароли не совпадают"}, status=400)
 
@@ -153,6 +198,65 @@ def reg(request):
             }, status=400)
 
     return render(request, "reg.html")
+
+
+def email(request):
+    if request.method == 'POST':
+        if request.POST.get('email'):
+            try:
+                email = request.POST.get('email')
+                validate_email(email)
+            except ValidationError:
+                return JsonResponse({'status': 'error', 'message' : 'Неправильно ввёден адрес почты'}, status=400)
+
+            send_mail(
+                "Полезная рассылка",
+                "Вы будете получать полезную рассылку о полезных продуктах.",
+                'edsuyargulov@yandex.ru',
+                [email],
+                fail_silently=False,
+            )
+
+            email_digest = EmailDigest(email = email)
+            email_digest.save()
+
+            return JsonResponse({'status': 'success', 'message' : 'Отправлено'})
+    else:
+        return JsonResponse({'status' : 'error', 'message' : 'Метод не разрешён. Только POST.'}, status=405)
+
+def confirm(request):
+    if request.method == 'POST':
+        code = request.POST.get('email-code')
+        user_id = request.session.get('pending_user_id')
+
+        if user_id:
+            try:
+                user = User.objects.get(id = user_id)
+                email_code = EmailCode.objects.get(user = user, code = code)
+
+                if email_code.code == code:
+                    if not email_code.is_expired():
+                        user.is_active = True
+                        user.save()
+                        email_code.delete()
+                        login(request, user)
+                        return JsonResponse({'status' : 'success', 'redirect' : '/account/'})
+                    else:
+                        return JsonResponse({'status': 'error', 'message': 'Срок действия кода истек'}, status=400)
+            except ObjectDoesNotExist:
+                return JsonResponse({'status': 'error', 'message': 'Неверный код'}, status=400)
+
+    return render(request, 'confirm.html')
+
+
+def send_email_code_async(email, code):
+    send_mail(
+        'Продукты 24/7: код подтверждения',
+        f'Ваш код подтверждения: {code}',
+        'edsuyargulov@yandex.ru',
+        [email],
+        fail_silently=False,
+    )
 
 
 def logout_view(request):
