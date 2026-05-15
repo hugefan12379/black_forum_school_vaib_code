@@ -36,7 +36,51 @@
         <!-- Кнопка регистрации -->
         <input type="button" class="btn btn-dark" id="save-button" value="Сохранить">
     </main>   
+    <form method="POST">
+
+    {% csrf_token %}
+
+    <label>
+
+        <input
+            type="checkbox"
+            name="two_factor"
+
+            {% if profile.two_factor_enabled %}
+            checked
+            {% endif %}
+        >
+
+        Подтверждение входа по почте
+
+    </label>
+
+    <button type="submit">
+        Сохранить
+    </button>
+
+</form>
 {% endblock %}
+```html
+<form method="POST">
+
+    {% csrf_token %}
+
+    <input
+        type="checkbox"
+        name="two_factor"
+
+        {% if profile.two_factor_enabled %}
+        checked
+        {% endif %}
+    >
+
+    <button type="submit">
+        Сохранить
+    </button>
+
+</form>
+```
 
 {% block js %}
     <script type="text/javascript" src={% static 'js/account.js' %}></script>

@@ -1,36 +1,49 @@
-from django.shortcuts import render, redirect, get_object_or_404
 
-from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.core.mail import send_mail
-from django.core.validators import validate_email
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.conf import settings
-
-
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse
-from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth import (
+    login,
+    logout,
+    authenticate,
+    update_session_auth_hash
+)
 from django.contrib.auth.models import User
-from django.core.mail import send_mail 
-from .models import EmailDigest, EmailCode
-from django.core.validators import validate_email
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
+
+from django.core.mail import send_mail
+from django.core.validators import validate_email
+from django.core.exceptions import (
+    ValidationError,
+    ObjectDoesNotExist
+)
+
+from django.template.loader import render_to_string
 from django.contrib import messages
 from django.utils import timezone
+from django.conf import settings
+
 from datetime import timedelta
-from django.contrib import messages
-from django.utils import timezone
-from datetime import timedelta
-from .models import ChatMessage, ForumPost, ForumComment, Topic  # Добавлен импорт Topic
-from .utils.nudenet_check import check_image_safe
+
+from .models import (
+    EmailDigest,
+    EmailCode,
+    Profile,
+    ChatMessage,
+    ForumPost,
+    ForumComment,
+    Topic,
+    Question
+)
+
 import random
+import string
 import threading
 
+
 # =========================
-# NudeNet (чат)
+# NudeNet
 # =========================
 try:
     from nudenet import NudeDetector
@@ -48,8 +61,31 @@ NSFW_THRESHOLD = 0.25
 # =========================
 # ВСПОМОГАТЕЛЬНОЕ
 # =========================
+def generate_code():
+
+    return ''.join(
+        random.choices(
+            string.ascii_uppercase + string.digits,
+            k=4
+        )
+    )
+
+
+def send_email_code_async(email, code):
+
+    send_mail(
+        'Black Forum: код подтверждения',
+        f'Ваш код подтверждения: {code}',
+        settings.EMAIL_HOST_USER,
+        [email],
+        fail_silently=False,
+    )
+
+
 def cleanup_old_chat_messages():
+
     now = timezone.now()
+
     ChatMessage.objects.filter(
         created_at__lt=now - timedelta(days=TEXT_TTL_DAYS),
         image__isnull=True,
@@ -68,20 +104,33 @@ def cleanup_old_chat_messages():
 
 
 def is_image_nsfw(uploaded_file) -> bool:
+
     if detector is None:
         return False
 
     try:
+
         import tempfile
 
         uploaded_file.seek(0)
+
         data = uploaded_file.read()
+
         uploaded_file.seek(0)
 
-        suffix = ".jpg" if not uploaded_file.name.lower().endswith(".png") else ".png"
+        suffix = (
+            ".jpg"
+            if not uploaded_file.name.lower().endswith(".png")
+            else ".png"
+        )
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        with tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=suffix
+        ) as tmp:
+
             tmp.write(data)
+
             path = tmp.name
 
         detections = detector.detect(path)
@@ -95,299 +144,545 @@ def is_image_nsfw(uploaded_file) -> bool:
         }
 
         return any(
-            d.get("class") in BAD_CLASSES and d.get("score", 0) >= NSFW_THRESHOLD
+            d.get("class") in BAD_CLASSES
+            and d.get("score", 0) >= NSFW_THRESHOLD
             for d in detections
         )
+
     except Exception:
         return False
-#регистрация:
+
 
 # =========================
 # ОСНОВНЫЕ СТРАНИЦЫ
 # =========================
 def index(request):
+
     return render(request, "index.html")
 
 
 def auth(request):
+
     if request.method == "POST":
+
+        email = request.POST.get("email")
+
+        password = request.POST.get("password")
+
         user = authenticate(
             request,
-            username=request.POST.get("email"),
-            password=request.POST.get("password"),
+            username=email,
+            password=password,
         )
-        if user:
-            login(request, user)
-            return JsonResponse({"status": "success", "redirect": "/"})
-        return JsonResponse({"status": "error", "message": "Неверные данные"})
+
+        if not user:
+
+            return JsonResponse({
+                "status": "error",
+                "message": "Неверные данные"
+            })
+
+        profile, created = Profile.objects.get_or_create(
+            user=user
+        )
+
+        if profile.two_factor_enabled:
+
+            code = generate_code()
+
+            EmailCode.objects.create(
+                user=user,
+                code=code
+            )
+
+            threading.Thread(
+                target=send_email_code_async,
+                args=(user.email, code)
+            ).start()
+
+            request.session[
+                "pending_login_user_id"
+            ] = user.id
+
+            return JsonResponse({
+                "status": "confirm_required",
+                "redirect": "/confirm-login/"
+            })
+
+        login(request, user)
+
+        return JsonResponse({
+            "status": "success",
+            "redirect": "/"
+        })
+
     return render(request, "auth.html")
 
 
-from django.contrib.auth import login, authenticate
-from django.contrib.auth.models import User
-from django.http import JsonResponse
-from django.shortcuts import render, redirect
-
-
-from django.contrib.auth import login
-from django.http import JsonResponse
-from django.contrib.auth.models import User
-from django.shortcuts import render
-
 def reg(request):
+
     if request.method == "POST":
+
         email = request.POST.get("email")
+
         password = request.POST.get("password")
-        confirm = request.POST.get("confirm_password")
-        first_name = request.POST.get("first_name", "")
-        last_name = request.POST.get("last_name", "")
-        
-        user = User.objects.create_user(
-            username = email, 
-            email = email, 
-            password = password, 
-            first_name = first_name, 
-            last_name = last_name,
-            is_active = False
+
+        confirm = request.POST.get(
+            "confirm_password"
         )
 
-        code = str(random.randint(100000, 999999))
+        first_name = request.POST.get(
+            "first_name",
+            ""
+        )
+
+        last_name = request.POST.get(
+            "last_name",
+            ""
+        )
+
+        if password != confirm:
+
+            return JsonResponse({
+                "status": "error",
+                "message": "Пароли не совпадают"
+            })
+
+        if User.objects.filter(
+            username=email
+        ).exists():
+
+            return JsonResponse({
+                "status": "error",
+                "message": "Пользователь уже существует"
+            })
+
+        try:
+
+            validate_email(email)
+
+        except ValidationError:
+
+            return JsonResponse({
+                "status": "error",
+                "message": "Неверная почта"
+            })
+
+        user = User.objects.create_user(
+            username=email,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+            is_active=False
+        )
+
+        Profile.objects.get_or_create(
+            user=user
+        )
+
+        code = generate_code()
 
         EmailCode.objects.create(
-            user = user,
-            code = code
+            user=user,
+            code=code
         )
-
-        # send_mail(
-        #     'Продукты 24/7: код подтверждения',
-        #     f'Ваш код подтверждения: {code}',
-        #     'edsuyargulov@yandex.ru',
-        #     [email],
-        #     fail_silently=False,
-        # )
 
         threading.Thread(
             target=send_email_code_async,
             args=(email, code)
-        ).start()        
-    
-        if password != confirm:
-            return JsonResponse({"status": "error", "message": "Пароли не совпадают"}, status=400)
+        ).start()
 
-        if User.objects.filter(username=email).exists():
-            return JsonResponse({"status": "error", "message": "Пользователь с такой почтой уже существует"}, status=406)
+        request.session[
+            'pending_user_id'
+        ] = user.id
 
-        try:
-            user = User.objects.create_user(
-                username=email,
-                email=email,
-                password=password,
-                first_name=first_name,
-                last_name=last_name
-            )
-            login(request, user)                    # автоматический вход
-
-            return JsonResponse({
-                "status": "success", 
-                "redirect": "/"                     # главная страница
-            })
-        except Exception:
-            return JsonResponse({
-                "status": "error", 
-                "message": "Ошибка при создании аккаунта. Попробуйте позже."
-            }, status=400)
+        return JsonResponse({
+            "status": "confirm_required",
+            "redirect": "/confirm/"
+        })
 
     return render(request, "reg.html")
 
 
-def email(request):
-    if request.method == 'POST':
-        if request.POST.get('email'):
-            try:
-                email = request.POST.get('email')
-                validate_email(email)
-            except ValidationError:
-                return JsonResponse({'status': 'error', 'message' : 'Неправильно ввёден адрес почты'}, status=400)
+def confirm(request):
 
-            send_mail(
-                "Полезная рассылка",
-                "Вы будете получать полезную рассылку о полезных продуктах.",
-                'edsuyargulov@yandex.ru',
-                [email],
-                fail_silently=False,
+    if request.method == 'POST':
+
+        code = request.POST.get(
+            'email-code'
+        )
+
+        user_id = request.session.get(
+            'pending_user_id'
+        )
+
+        if not user_id:
+
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Сессия истекла'
+            })
+
+        try:
+
+            user = User.objects.get(
+                id=user_id
             )
 
-            email_digest = EmailDigest(email = email)
-            email_digest.save()
+            email_code = EmailCode.objects.filter(
+                user=user
+            ).last()
 
-            return JsonResponse({'status': 'success', 'message' : 'Отправлено'})
-    else:
-        return JsonResponse({'status' : 'error', 'message' : 'Метод не разрешён. Только POST.'}, status=405)
+            if not email_code:
 
-def confirm(request):
-    if request.method == 'POST':
-        code = request.POST.get('email-code')
-        user_id = request.session.get('pending_user_id')
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Код не найден'
+                })
 
-        if user_id:
-            try:
-                user = User.objects.get(id = user_id)
-                email_code = EmailCode.objects.get(user = user, code = code)
+            if email_code.code != code:
 
-                if email_code.code == code:
-                    if not email_code.is_expired():
-                        user.is_active = True
-                        user.save()
-                        email_code.delete()
-                        login(request, user)
-                        return JsonResponse({'status' : 'success', 'redirect' : '/account/'})
-                    else:
-                        return JsonResponse({'status': 'error', 'message': 'Срок действия кода истек'}, status=400)
-            except ObjectDoesNotExist:
-                return JsonResponse({'status': 'error', 'message': 'Неверный код'}, status=400)
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Неверный код'
+                })
+
+            if email_code.is_expired():
+
+                email_code.delete()
+
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Код истёк'
+                })
+
+            user.is_active = True
+
+            user.save()
+
+            email_code.delete()
+
+            login(request, user)
+
+            del request.session[
+                'pending_user_id'
+            ]
+
+            return JsonResponse({
+                'status': 'success',
+                'redirect': '/'
+            })
+
+        except ObjectDoesNotExist:
+
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Ошибка подтверждения'
+            })
 
     return render(request, 'confirm.html')
 
 
-def send_email_code_async(email, code):
-    send_mail(
-        'Продукты 24/7: код подтверждения',
-        f'Ваш код подтверждения: {code}',
-        'edsuyargulov@yandex.ru',
-        [email],
-        fail_silently=False,
-    )
+def confirm_login(request):
+
+    if request.method == 'POST':
+
+        code = request.POST.get(
+            'email-code'
+        )
+
+        user_id = request.session.get(
+            'pending_login_user_id'
+        )
+
+        if not user_id:
+
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Сессия истекла'
+            })
+
+        try:
+
+            user = User.objects.get(
+                id=user_id
+            )
+
+            email_code = EmailCode.objects.filter(
+                user=user
+            ).last()
+
+            if not email_code:
+
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Код не найден'
+                })
+
+            if email_code.code != code:
+
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Неверный код'
+                })
+
+            if email_code.is_expired():
+
+                email_code.delete()
+
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Код истёк'
+                })
+
+            email_code.delete()
+
+            login(request, user)
+
+            del request.session[
+                'pending_login_user_id'
+            ]
+
+            return JsonResponse({
+                'status': 'success',
+                'redirect': '/'
+            })
+
+        except ObjectDoesNotExist:
+
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Ошибка подтверждения'
+            })
+
+    return render(request, 'confirm.html')
+
+
+def email(request):
+
+    if request.method == 'POST':
+
+        if request.POST.get('email'):
+
+            try:
+
+                email = request.POST.get('email')
+
+                validate_email(email)
+
+            except ValidationError:
+
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Неправильная почта'
+                })
+
+            send_mail(
+                "Полезная рассылка",
+                "Вы подписались на рассылку.",
+                settings.EMAIL_HOST_USER,
+                [email],
+                fail_silently=False,
+            )
+
+            EmailDigest.objects.create(
+                email=email
+            )
+
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Отправлено'
+            })
+
+    return JsonResponse({
+        'status': 'error'
+    })
 
 
 def logout_view(request):
+
     logout(request)
+
     return redirect("index")
 
 
 # =========================
 # ЧАТ
 # =========================
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
-from django.shortcuts import get_object_or_404, render
-from django.http import JsonResponse
-from django.template.loader import render_to_string
-
-# Предполагаю, что форма у тебя уже есть. Если нет — создай простую или используй ModelForm.
-# from .forms import ChatMessageForm   # раскомментируй если используешь форму
-
-
 @login_required
 def chat_page(request):
+
     cleanup_old_chat_messages()
-    
-    # Сообщения от старых к новым (правильный порядок для чата)
-    messages_qs = ChatMessage.objects.order_by("created_at")[:200]
-    
-    return render(request, "chat.html", {"messages": messages_qs})
+
+    messages_qs = ChatMessage.objects.order_by(
+        "created_at"
+    )[:200]
+
+    return render(
+        request,
+        "chat.html",
+        {
+            "messages": messages_qs
+        }
+    )
 
 
 @login_required
 @require_POST
 def chat_send(request):
+
     cleanup_old_chat_messages()
 
-    text = (request.POST.get("text") or "").strip()
+    text = (
+        request.POST.get("text") or ""
+    ).strip()
+
     upload = request.FILES.get("upload")
-    hide_from_sides = request.POST.get("hide_from_sides") == "1"   # если используешь этот флаг
 
     image = None
+
     file = None
 
     if upload:
-        if upload.content_type.startswith("image/"):
-            if is_image_nsfw(upload):   # твоя функция проверки
-                return JsonResponse({"status": "error", "message": "18+ запрещено"})
+
+        if upload.content_type.startswith(
+            "image/"
+        ):
+
+            if is_image_nsfw(upload):
+
+                return JsonResponse({
+                    "status": "error",
+                    "message": "18+ запрещено"
+                })
+
             image = upload
+
         else:
+
             file = upload
 
     if not text and not image and not file:
-        return JsonResponse({"status": "error", "message": "Нельзя отправить пустое сообщение 🙂"})
 
-    # Создаём сообщение
+        return JsonResponse({
+            "status": "error",
+            "message": "Пустое сообщение"
+        })
+
     msg = ChatMessage.objects.create(
         author=request.user,
         text=text,
         image=image,
         file=file,
-        # hide_from_sides=hide_from_sides,   # раскомментируй, если поле есть в модели
     )
 
-    # Рендерим HTML одного сообщения (для добавления в чат без перезагрузки)
-    message_html = render_to_string("chat/message_partial.html", {
-        "m": msg,
-        "user": request.user,
-    })
+    message_html = render_to_string(
+        "message_partial.html",
+        {
+            "m": msg,
+            "user": request.user,
+        }
+    )
 
     return JsonResponse({
         "status": "success",
-        "message_html": message_html,      # ← главное добавление
+        "message_html": message_html,
     })
 
 
 @login_required
 @require_POST
 def chat_delete(request, msg_id):
-    msg = get_object_or_404(ChatMessage, id=msg_id)
 
-    # Проверка прав (автор или staff)
-    if msg.author != request.user and not request.user.is_staff:
-        return JsonResponse({"status": "error", "message": "Нет прав на удаление"})
+    msg = get_object_or_404(
+        ChatMessage,
+        id=msg_id
+    )
+
+    if (
+        msg.author != request.user
+        and not request.user.is_staff
+    ):
+
+        return JsonResponse({
+            "status": "error"
+        })
 
     msg.delete()
-    return JsonResponse({"status": "success"})
+
+    return JsonResponse({
+        "status": "success"
+    })
+
 
 # =========================
 # ФОРУМ
 # =========================
 @login_required
 def forum_home(request):
-    # Получаем выбранную тему из GET параметров
-    selected_topic = request.GET.get('topic')
-    selected_topic_id = request.GET.get('topic_id')
-    
-    # Базовый запрос
-    posts = ForumPost.objects.filter(is_visible=True)
-    
-    # Применяем фильтр по теме
+
+    selected_topic = request.GET.get(
+        'topic'
+    )
+
+    selected_topic_id = request.GET.get(
+        'topic_id'
+    )
+
+    posts = ForumPost.objects.filter(
+        is_visible=True
+    )
+
     if selected_topic:
-        posts = posts.filter(topics__slug=selected_topic)
+
+        posts = posts.filter(
+            topics__slug=selected_topic
+        )
+
     elif selected_topic_id:
-        posts = posts.filter(topics__id=selected_topic_id)
-    
-    # Сортируем
-    posts = posts.order_by("-created_at")
-    
-    # Получаем все темы для фильтров (только те, у которых есть посты)
-    topics_with_posts = Topic.objects.filter(forum_posts__is_visible=True).distinct()
-    
-    # Считаем количество постов в каждой теме
+
+        posts = posts.filter(
+            topics__id=selected_topic_id
+        )
+
+    posts = posts.order_by(
+        "-created_at"
+    )
+
+    topics_with_posts = Topic.objects.filter(
+        forum_posts__is_visible=True
+    ).distinct()
+
     for topic in topics_with_posts:
+
         topic.post_count = ForumPost.objects.filter(
-            is_visible=True, 
+            is_visible=True,
             topics=topic
         ).count()
-    
-    # Добавляем сообщения в контекст
-    messages_list = messages.get_messages(request)
-    
-    return render(request, "forum/home.html", {
-        "posts": posts,
-        "topics": topics_with_posts,
-        "selected_topic": selected_topic or selected_topic_id,
-        "messages": messages_list
-    })
+
+    messages_list = messages.get_messages(
+        request
+    )
+
+    return render(
+        request,
+        "forum/home.html",
+        {
+            "posts": posts,
+            "topics": topics_with_posts,
+            "selected_topic":
+                selected_topic or selected_topic_id,
+            "messages": messages_list
+        }
+    )
 
 
 @login_required
 def forum_create_post(request):
+
     now = timezone.now()
+
     last_24h = now - timedelta(hours=24)
 
     posts_last_24h = ForumPost.objects.filter(
@@ -395,36 +690,52 @@ def forum_create_post(request):
         created_at__gte=last_24h
     ).order_by("-created_at")
 
-    if request.user.is_staff:
-        limit = 100
-    else:
-        limit = 1
+    limit = 100 if request.user.is_staff else 1
 
     if posts_last_24h.count() >= limit:
+
         last_post_time = posts_last_24h.first().created_at
-        reset_at = last_post_time + timedelta(hours=24)
-        seconds_left = int((reset_at - now).total_seconds())
+
+        reset_at = last_post_time + timedelta(
+            hours=24
+        )
+
+        seconds_left = int(
+            (reset_at - now).total_seconds()
+        )
 
         messages.error(
             request,
-            f"Вы опубликовали максимум постов за 24 часа. "
-            f"Таймер сбросится через {seconds_left} сек."
+            f"Лимит постов. Ждите {seconds_left} сек."
         )
+
         return redirect("forum_home")
 
     if request.method == "POST":
+
         title = request.POST.get("title")
-        text_content = request.POST.get("text")
+
+        text_content = request.POST.get(
+            "text"
+        )
+
         image = request.FILES.get("image")
-        
-        # Получаем выбранные темы
-        topic_ids = request.POST.getlist("topics")
+
+        topic_ids = request.POST.getlist(
+            "topics"
+        )
 
         if not title or not text_content:
-            messages.error(request, "Заполните все поля")
-            return redirect("forum_create_post")
 
-        # Создаем пост
+            messages.error(
+                request,
+                "Заполните поля"
+            )
+
+            return redirect(
+                "forum_create_post"
+            )
+
         post = ForumPost.objects.create(
             author=request.user,
             title=title,
@@ -434,117 +745,171 @@ def forum_create_post(request):
             is_visible=True,
             is_checked=True,
         )
-        
-        # Добавляем темы
+
         if topic_ids:
+
             post.topics.set(topic_ids)
 
-        messages.success(request, "Пост успешно создан!")
+        messages.success(
+            request,
+            "Пост создан"
+        )
+
         return redirect("forum_home")
 
-    # Получаем все темы для формы создания
     topics = Topic.objects.all()
-    return render(request, "forum/create_post.html", {"topics": topics})
+
+    return render(
+        request,
+        "forum/create_post.html",
+        {
+            "topics": topics
+        }
+    )
 
 
 @login_required
 def forum_post_detail(request, post_id):
-    post = get_object_or_404(ForumPost, id=post_id, is_visible=True)
-    comments = post.comments.order_by("created_at")
+
+    post = get_object_or_404(
+        ForumPost,
+        id=post_id,
+        is_visible=True
+    )
+
+    comments = post.comments.order_by(
+        "created_at"
+    )
 
     if request.method == "POST":
+
         text = request.POST.get("text")
+
         if text:
+
             ForumComment.objects.create(
                 post=post,
                 author=request.user,
                 text=text
             )
-        return redirect("forum_post_detail", post_id=post.id)
 
-    return render(request, "forum/post_detail.html", {
-        "post": post,
-        "comments": comments
-    })
+        return redirect(
+            "forum_post_detail",
+            post_id=post.id
+        )
+
+    return render(
+        request,
+        "forum/post_detail.html",
+        {
+            "post": post,
+            "comments": comments
+        }
+    )
 
 
 # =========================
 # ПРОСТЫЕ СТРАНИЦЫ
 # =========================
 def question(request):
-    return render(request, "question.html")
+
+    return render(
+        request,
+        "question.html"
+    )
 
 
 def images(request):
-    return render(request, "images.html")
+
+    return render(
+        request,
+        "images.html"
+    )
 
 
 def questions(request):
-    if request.method == "POST" and request.user.is_authenticated:
-        question_text = request.POST.get("question_text")
-        if question_text:
-            # Если создали модель Question
-            # Question.objects.create(
-            #     author=request.user,
-            #     text=question_text,
-            #     is_visible=False  # На модерации
-            # )
-            messages.success(request, "Ваш вопрос отправлен на модерацию!")
-            return redirect("questions")
-    
-    # Получаем вопросы (если есть модель)
-    # questions_list = Question.objects.filter(is_visible=True)
-    
-    return render(request, "questions.html", {
-        # 'questions': questions_list
-    })
 
+    return render(
+        request,
+        "questions.html"
+    )
 
-
-
-
-
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from .models import Question
 
 @login_required
 def questions_view(request):
+
     if request.method == 'POST':
-        question_text = request.POST.get('question_text')
-        if question_text and question_text.strip():
-            # Создаем вопрос с привязкой к текущему пользователю
+
+        question_text = request.POST.get(
+            'question_text'
+        )
+
+        if (
+            question_text
+            and question_text.strip()
+        ):
+
             Question.objects.create(
                 author=request.user,
                 text=question_text.strip()
             )
-            return redirect('questions')  # Перенаправляем на ту же страницу
-    
-    # Получаем все вопросы для отображения
+
+            return redirect('questions')
+
     questions = Question.objects.all()
-    
-    return render(request, 'questions.html', {
-        'questions': questions
-    })
+
+    return render(
+        request,
+        'questions.html',
+        {
+            'questions': questions
+        }
+    )
 
 
+@login_required
 def account(request):
-    print(request.user.id)
+
+    profile, created = Profile.objects.get_or_create(
+        user=request.user
+    )
+
+    if request.method == "POST":
+
+        profile.two_factor_enabled = (
+            request.POST.get("two_factor")
+            == "on"
+        )
+
+        profile.save()
+
+        messages.success(
+            request,
+            "Настройки сохранены"
+        )
+
+        return redirect("account")
+
     context = {
 
-        'username' : request.user.username,
-        'first_name' : request.user.first_name,
-        'last_name' : request.user.last_name,
-        'email' : request.user.email,
+        'username': request.user.username,
+        'first_name': request.user.first_name,
+        'last_name': request.user.last_name,
+        'email': request.user.email,
+        'profile': profile,
     }
-    return render(request, 'account.html', context)
 
-
-
-
-
-
+    return render(
+        request,
+        'account.html',
+        context
+    )
 
 
 def rules(request):
-    return render(request, "rules.html")
+
+    return render(
+        request,
+        "rules.html"
+    )
+

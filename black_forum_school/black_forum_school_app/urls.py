@@ -26,5 +26,18 @@ urlpatterns = [
     path('account/', views.account, name='account'),
     path('rules/', views.rules, name='rules'),
     path('comfirm/', views.confirm, name='confirm'),
-    
+path(
+    "confirm/",
+    views.confirm,
+    name="confirm"
+),
+
+path(
+    "confirm-login/",
+    views.confirm_login,
+    name="confirm_login"
+),
+
+
 ]
+

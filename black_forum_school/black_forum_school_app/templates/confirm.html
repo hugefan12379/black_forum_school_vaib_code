@@ -1,92 +1,15 @@
-{% include 'navbar.html' %}
-{% load static %}
+<form method="POST">
 
-{% block title %}верефикация - 24{% endblock %}
-
-{% block css %}
-    <link rel="stylesheet" href={% static 'css/confirm.css' %}></link>
-{% endblock %}
-
-<style>
-
-.confirm {
-    margin-left: 19%;
-    margin-right: 2rem;
-    margin-top: 2rem;
-    height: 80vh;
-    width: 30%;
-}
-
-#confirm-button {
-    margin-top: 2rem;
-    margin-bottom: 2rem; 
-    width: 100%;
-}
-
-@media screen and (max-width: 600px) {
-    .confirm {
-        margin-left: 0;
-        width: 100%;
-    }
-}
-
-</style>
-
-{% block content %}
     {% csrf_token %}
-    <div class="container confirm">
-        <label for="first-name" class="form-label">Код</label>
-        <input type="text" class="form-control" id="email-code" placeholder="Введите код из вашего почтового ящика">
 
-        <input type="button" class="btn btn-dark" id="confirm-button" value="Подтвердить">
-    </div>
-{% endblock %}
+    <input
+        type="text"
+        name="code"
+        maxlength="4"
+        placeholder="Код">
 
-<script>
+    <button type="submit">
+        Подтвердить
+    </button>
 
-    $('#confirm-button').click(
-    function() {
-
-        // Подбираем данные с HTML
-        let emailCode = $('#email-code').val();
-        let confirmButton = $('#confirm-button');
-
-        confirmButton.prop('disabled', true);
-        confirmButton.prop('hidden', true);
-        $('.confirm').append(`
-            <div id="confirm-spinner" class="spinner-border mt-2" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-        `)
-
-        const CSRF = $('[name=csrfmiddlewaretoken]').val();
-        
-        let userData = {
-            'email-code' : emailCode,
-            'csrfmiddlewaretoken': CSRF
-        }
-
-        $.ajax({
-            url: '/confirm/',
-            type: 'POST',
-            dataType: 'json',
-            data: userData,
-
-            success: function(data) {
-                window.location.href = '/';
-            },
-
-            error: function(xhr) {
-                if(xhr.responseJSON) {
-                    $('#confirm-spinner').remove();
-                    confirmButton.val(xhr.responseJSON.message);
-                    confirmButton.css('background-color', 'red');
-                }
-            }   
-        });
-    }
-);
-
-</script>
-
-{% include 'footer.html' %}
+</form>

@@ -33,6 +33,25 @@ DEBUG = True
 ALLOWED_HOSTS = ['192.168.0.143']
 
 
+from .personal_info import (
+    MY_EMAIL_HOST_USER,
+    MY_EMAIL_HOST_PASSWORD
+)
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+EMAIL_HOST = 'smtp.gmail.com'
+
+EMAIL_PORT = 587
+
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = MY_EMAIL_HOST_USER
+
+EMAIL_HOST_PASSWORD = MY_EMAIL_HOST_PASSWORD
+
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -177,3 +196,13 @@ else:
 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 EMAIL_TIMEOUT = 20
+
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = MY_EMAIL_HOST_USER
+EMAIL_HOST_PASSWORD = MY_EMAIL_HOST_PASSWORD

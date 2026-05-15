@@ -219,3 +219,20 @@ class EmailCode(models.Model):
 
     def is_expired(self):
         return timezone.now() > self.created_at + timedelta(minutes=30)
+    
+    
+    from django.db import models
+from django.contrib.auth.models import User
+
+
+class EmailCode(models.Model):
+    email = models.EmailField()
+    code = models.CharField(max_length=4)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+    two_factor_enabled = models.BooleanField(default=True)
+    
