@@ -8,161 +8,278 @@
 {% endblock %}
 
 {% block content %}
-{% comment %} <style>
-    .popover {
-        background-color: red;
-        color: white;
-    }
-</style> {% endcomment %}
+
 <div class="container my-5">
     <div class="row justify-content-center">
         <div class="col-md-6 col-lg-5">
-            
+
             <div class="auth-card p-4 p-md-5 rounded-3">
-                <h2 class="text-center mb-4 text-light">Регистрация</h2>
-                
+
+                <h2 class="text-center mb-4 text-light">
+                    Регистрация
+                </h2>
+
                 <form action="/reg/" method="POST" id="reg-form">
+
                     {% csrf_token %}
-                    
+
                     <div class="mb-3">
-                        <label for="first-name" class="form-label text-light">Имя</label>
-                        <input type="text" 
-                               id="first-name" 
-                               name="first_name" 
-                               class="form-control bg-dark text-light border-secondary" 
-                               placeholder="Введите имя" 
-                               required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="last-name" class="form-label text-light">Фамилия</label>
-                        <input type="text" 
-                               id="last-name" 
-                               name="last_name" 
-                               class="form-control bg-dark text-light border-secondary" 
-                               placeholder="Введите фамилию" 
-                               required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="email" class="form-label text-light">Электронная почта</label>
-                        <input type="email" 
-                               id="email" 
-                               name="email" 
-                               class="form-control bg-dark text-light border-secondary" 
-                               placeholder="Введите e-mail" 
-                               required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="password" class="form-label text-light">Пароль</label>
-                        <input type="password" 
-                               id="password" 
-                               name="password" 
-                               class="form-control bg-dark text-light border-secondary" 
-                               placeholder="Введите пароль (минимум 6 символов)" 
-                               minlength="6" 
-                               required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="confirm_password" class="form-label text-light">Подтвердите пароль</label>
-                        <input type="password" 
-                               id="confirm_password" 
-                               name="confirm_password" 
-                               class="form-control bg-dark text-light border-secondary" 
-                               placeholder="Повторите пароль" 
-                               required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="class_info" class="form-label text-light">Класс (номер и буква)</label>
-                        <input type="text" 
-                               id="class_info" 
-                               name="class_info" 
-                               class="form-control bg-dark text-light border-secondary" 
-                               placeholder="Например: 10А" 
-                               maxlength="3">
-                    </div>
-                    
-                    <div class="mb-4 form-check">
-                        <input type="checkbox" 
-                               id="agree" 
-                               name="agree" 
-                               class="form-check-input bg-dark border-secondary" 
-                               required>
-                        <label for="agree" class="form-check-label text-light">
-                            Я согласен с <a href="{% url 'rules' %}" class="text-info">условиями использования</a>
+                        <label for="first-name" class="form-label text-light">
+                            Имя
                         </label>
+
+                        <input
+                            type="text"
+                            id="first-name"
+                            name="first_name"
+                            class="form-control bg-dark text-light border-secondary"
+                            placeholder="Введите имя"
+                            required
+                        >
                     </div>
-                    
-                    <button type="submit" id="reg-button" class="btn btn-primary w-100 py-2" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="right" data-bs-content="">
+
+                    <div class="mb-3">
+                        <label for="last-name" class="form-label text-light">
+                            Фамилия
+                        </label>
+
+                        <input
+                            type="text"
+                            id="last-name"
+                            name="last_name"
+                            class="form-control bg-dark text-light border-secondary"
+                            placeholder="Введите фамилию"
+                            required
+                        >
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label text-light">
+                            Электронная почта
+                        </label>
+
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            class="form-control bg-dark text-light border-secondary"
+                            placeholder="Введите e-mail"
+                            required
+                        >
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label text-light">
+                            Пароль
+                        </label>
+
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="form-control bg-dark text-light border-secondary"
+                            placeholder="Введите пароль"
+                            minlength="6"
+                            required
+                        >
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label text-light">
+                            Подтвердите пароль
+                        </label>
+
+                        <input
+                            type="password"
+                            id="confirm_password"
+                            name="confirm_password"
+                            class="form-control bg-dark text-light border-secondary"
+                            placeholder="Повторите пароль"
+                            required
+                        >
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="class_info" class="form-label text-light">
+                            Класс
+                        </label>
+
+                        <input
+                            type="text"
+                            id="class_info"
+                            name="class_info"
+                            class="form-control bg-dark text-light border-secondary"
+                            placeholder="Например: 10А"
+                            maxlength="3"
+                        >
+                    </div>
+
+                    <div class="mb-4 form-check">
+
+                        <input
+                            type="checkbox"
+                            id="agree"
+                            name="agree"
+                            class="form-check-input bg-dark border-secondary"
+                            required
+                        >
+
+                        <label for="agree" class="form-check-label text-light">
+                            Я согласен с
+                            <a href="{% url 'rules' %}" class="text-info">
+                                условиями использования
+                            </a>
+                        </label>
+
+                    </div>
+
+                    <!-- Ошибки -->
+                    <div id="error-container" class="d-none mb-3"></div>
+
+                    <!-- Успех -->
+                    <div id="success-container" class="d-none mb-3"></div>
+
+                    <button
+                        type="submit"
+                        id="reg-button"
+                        class="btn btn-primary w-100 py-2"
+                    >
                         Зарегистрироваться
                     </button>
-                    
+
                     <div class="text-center mt-4">
-                        <a href="/auth" class="text-info text-decoration-none">
+
+                        <a href="/auth/" class="text-info text-decoration-none">
                             Уже есть аккаунт? Войти
                         </a>
+
                     </div>
+
                 </form>
+
             </div>
+
         </div>
     </div>
 </div>
 
+<!-- jQuery -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-<script>
-$(document).ready(function() {
-    $('#reg-form').on('submit', function(e) {
-        e.preventDefault();   // ← Очень важно! Отключаем обычную отправку формы
 
-        // Скрываем предыдущие ошибки
-        $('#error-container').addClass('d-none').empty();
+<!-- Bootstrap -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+
+$(document).ready(function() {
+
+    let isSending = false;
+
+    $('#reg-form').on('submit', function(e) {
+
+        e.preventDefault();
+
+        if (isSending) {
+            return;
+        }
+
+        isSending = true;
+
+        $('#reg-button').prop('disabled', true);
+
+        $('#error-container')
+            .addClass('d-none')
+            .empty();
+
+        $('#success-container')
+            .addClass('d-none')
+            .empty();
 
         $.ajax({
+
             url: '/reg/',
             type: 'POST',
-            data: $(this).serialize(),   // автоматически собирает все поля формы
-            dataType: 'json',            // ← Говорим jQuery, что ожидаем JSON
+
+            data: $(this).serialize(),
+
+            dataType: 'json',
+
             success: function(response) {
+
+                isSending = false;
+
+                $('#reg-button').prop('disabled', false);
+
+                console.log(response);
+
                 if (response.status === 'success') {
-                    // Успех — переходим на главную
-                    window.location.href = response.redirect || '/';
-                } else {
-                    // Ошибка от сервера (пароли не совпадают, пользователь существует и т.д.)
+
+                    $('#success-container')
+                        .html(
+                            '<div class="alert alert-success">' +
+                            'Регистрация успешна!' +
+                            '</div>'
+                        )
+                        .removeClass('d-none');
+
+                    setTimeout(function() {
+                        window.location.href = response.redirect || '/';
+                    }, 800);
+
+                }
+                else {
+
                     $('#error-container')
-                        .html('<div class="alert alert-danger">' + response.message + '</div>')
+                        .html(
+                            '<div class="alert alert-danger">' +
+                            response.message +
+                            '</div>'
+                        )
                         .removeClass('d-none');
                 }
             },
+
             error: function(xhr) {
-                let msg = 'Произошла неизвестная ошибка. Попробуйте позже.';
-                
+
+                isSending = false;
+
+                $('#reg-button').prop('disabled', false);
+
+                console.log(xhr);
+                console.log(xhr.responseText);
+
+                let message = 'Ошибка регистрации';
+
                 try {
-                    const resp = JSON.parse(xhr.responseText);
-                    if (resp.message) msg = resp.message;
-                    console.error('Ошибка:  ',  resp.message);
-                    let popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
-                    let popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
-                        return new bootstrap.Popover(popoverTriggerEl)
-                    })
-                    $("#reg-button").attr("data-bs-content", resp.message)
-                } catch(e) {}
+
+                    const response = JSON.parse(xhr.responseText);
+
+                    if (response.message) {
+                        message = response.message;
+                    }
+
+                }
+                catch(e) {
+                    console.log(e);
+                }
+
                 $('#error-container')
-                    .html('<div class="alert alert-danger">' + msg + '</div>')
+                    .html(
+                        '<div class="alert alert-danger">' +
+                        message +
+                        '</div>'
+                    )
                     .removeClass('d-none');
             }
+
         });
+
     });
+
 });
-
-
 
 </script>
 
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 {% endblock %}
 
 {% include 'footer.html' %}

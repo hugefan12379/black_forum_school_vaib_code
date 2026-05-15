@@ -42,15 +42,13 @@ from .personal_info import (
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 EMAIL_HOST = 'smtp.gmail.com'
-
 EMAIL_PORT = 587
 
+EMAIL_HOST_USER = 'unofficalschoolforumrv@gmail.com'
+EMAIL_HOST_PASSWORD = 'ldkyifekxvblsbwk'
+
 EMAIL_USE_TLS = True
-
-EMAIL_HOST_USER = MY_EMAIL_HOST_USER
-
-EMAIL_HOST_PASSWORD = MY_EMAIL_HOST_PASSWORD
-
+EMAIL_USE_SSL = False
 
 # Application definition
 
@@ -181,11 +179,6 @@ CSRF_TRUSTED_ORIGINS = [
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.yandex.ru'
-EMAIL_PORT = 465
-EMAIL_USE_TLS = False
-EMAIL_USE_SSL = True
 
 if MY_EMAIL_HOST_USER and MY_EMAIL_HOST_PASSWORD:
     EMAIL_HOST_USER = MY_EMAIL_HOST_USER
@@ -198,11 +191,3 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 EMAIL_TIMEOUT = 20
 
 
-
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-
-EMAIL_HOST_USER = MY_EMAIL_HOST_USER
-EMAIL_HOST_PASSWORD = MY_EMAIL_HOST_PASSWORD

@@ -166,7 +166,6 @@ def auth(request):
     if request.method == "POST":
 
         email = request.POST.get("email")
-
         password = request.POST.get("password")
 
         user = authenticate(
@@ -182,6 +181,13 @@ def auth(request):
                 "message": "Неверные данные"
             })
 
+        if not user.is_active:
+
+            return JsonResponse({
+                "status": "error",
+                "message": "Подтвердите почту"
+            })
+
         profile, created = Profile.objects.get_or_create(
             user=user
         )
@@ -191,7 +197,7 @@ def auth(request):
             code = generate_code()
 
             EmailCode.objects.create(
-                user=user,
+                email=user.email,
                 code=code
             )
 
@@ -224,12 +230,8 @@ def reg(request):
     if request.method == "POST":
 
         email = request.POST.get("email")
-
         password = request.POST.get("password")
-
-        confirm = request.POST.get(
-            "confirm_password"
-        )
+        confirm = request.POST.get("confirm_password")
 
         first_name = request.POST.get(
             "first_name",
@@ -284,7 +286,7 @@ def reg(request):
         code = generate_code()
 
         EmailCode.objects.create(
-            user=user,
+            email=email,
             code=code
         )
 
@@ -299,6 +301,7 @@ def reg(request):
 
         return JsonResponse({
             "status": "confirm_required",
+            "message": "Код отправлен на почту",
             "redirect": "/confirm/"
         })
 
@@ -331,7 +334,7 @@ def confirm(request):
             )
 
             email_code = EmailCode.objects.filter(
-                user=user
+                email=user.email
             ).last()
 
             if not email_code:
@@ -358,7 +361,6 @@ def confirm(request):
                 })
 
             user.is_active = True
-
             user.save()
 
             email_code.delete()
@@ -410,7 +412,7 @@ def confirm_login(request):
             )
 
             email_code = EmailCode.objects.filter(
-                user=user
+                email=user.email
             ).last()
 
             if not email_code:

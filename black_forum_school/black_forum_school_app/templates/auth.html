@@ -8,6 +8,12 @@
 {% endblock %}
 
 {% block content %}
+
+<form style="display:none;">
+    {% csrf_token %}
+</form>
+
+
 <div class="container my-5">
     <div class="row justify-content-center">
         <div class="col-md-5 col-lg-4">
@@ -115,7 +121,6 @@ $(document).ready(function() {
                 'email': email,
                 'password': password,
                 'remember_me': rememberMe,
-                'csrfmiddlewaretoken': '{{ csrf_token }}'
             },
             success: function(response) {
                 if (response.status === 'success') {
