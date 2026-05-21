@@ -309,52 +309,34 @@ def reg(request):
 
 
 def confirm(request):
-
     if request.method == 'POST':
-
-        code = request.POST.get(
-            'email-code'
-        )
-
-        user_id = request.session.get(
-            'pending_user_id'
-        )
+        code = request.POST.get('email-code')
+        user_id = request.session.get('pending_user_id')
 
         if not user_id:
-
             return JsonResponse({
                 'status': 'error',
                 'message': 'Сессия истекла'
             })
 
         try:
-
-            user = User.objects.get(
-                id=user_id
-            )
-
-            email_code = EmailCode.objects.filter(
-                email=user.email
-            ).last()
+            user = User.objects.get(id=user_id)
+            email_code = EmailCode.objects.filter(email=user.email).last()
 
             if not email_code:
-
                 return JsonResponse({
                     'status': 'error',
                     'message': 'Код не найден'
                 })
 
             if email_code.code != code:
-
                 return JsonResponse({
                     'status': 'error',
                     'message': 'Неверный код'
                 })
 
             if email_code.is_expired():
-
                 email_code.delete()
-
                 return JsonResponse({
                     'status': 'error',
                     'message': 'Код истёк'
@@ -362,119 +344,85 @@ def confirm(request):
 
             user.is_active = True
             user.save()
-
             email_code.delete()
-
             login(request, user)
-
-            del request.session[
-                'pending_user_id'
-            ]
+            del request.session['pending_user_id']
 
             return JsonResponse({
                 'status': 'success',
                 'redirect': '/'
             })
 
-        except ObjectDoesNotExist:
-
+        except Exception as e:
+            print("CONFIRM ERROR:", e)
             return JsonResponse({
                 'status': 'error',
-                'message': 'Ошибка подтверждения'
+                'message': str(e)
             })
 
     return render(request, 'confirm.html')
 
 
 def confirm_login(request):
-
     if request.method == 'POST':
-
-        code = request.POST.get(
-            'email-code'
-        )
-
-        user_id = request.session.get(
-            'pending_login_user_id'
-        )
+        code = request.POST.get('email-code')
+        user_id = request.session.get('pending_login_user_id')
 
         if not user_id:
-
             return JsonResponse({
                 'status': 'error',
                 'message': 'Сессия истекла'
             })
 
         try:
-
-            user = User.objects.get(
-                id=user_id
-            )
-
-            email_code = EmailCode.objects.filter(
-                email=user.email
-            ).last()
+            user = User.objects.get(id=user_id)
+            email_code = EmailCode.objects.filter(email=user.email).last()
 
             if not email_code:
-
                 return JsonResponse({
                     'status': 'error',
                     'message': 'Код не найден'
                 })
 
             if email_code.code != code:
-
                 return JsonResponse({
                     'status': 'error',
                     'message': 'Неверный код'
                 })
 
             if email_code.is_expired():
-
                 email_code.delete()
-
                 return JsonResponse({
                     'status': 'error',
                     'message': 'Код истёк'
                 })
 
             email_code.delete()
-
             login(request, user)
-
-            del request.session[
-                'pending_login_user_id'
-            ]
+            del request.session['pending_login_user_id']
 
             return JsonResponse({
                 'status': 'success',
                 'redirect': '/'
             })
 
-        except ObjectDoesNotExist:
-
+        except Exception as e:
+            print("CONFIRM ERROR:", e)
             return JsonResponse({
                 'status': 'error',
-                'message': 'Ошибка подтверждения'
+                'message': str(e)
             })
 
     return render(request, 'confirm.html')
 
 
 def email(request):
-
     if request.method == 'POST':
-
         if request.POST.get('email'):
-
             try:
-
                 email = request.POST.get('email')
-
                 validate_email(email)
-
             except ValidationError:
-
                 return JsonResponse({
                     'status': 'error',
                     'message': 'Неправильная почта'
@@ -488,9 +436,7 @@ def email(request):
                 fail_silently=False,
             )
 
-            EmailDigest.objects.create(
-                email=email
-            )
+            EmailDigest.objects.create(email=email)
 
             return JsonResponse({
                 'status': 'success',
@@ -500,7 +446,6 @@ def email(request):
     return JsonResponse({
         'status': 'error'
     })
-
 
 def logout_view(request):
 

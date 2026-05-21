@@ -124,8 +124,19 @@ $(document).ready(function() {
             },
             success: function(response) {
                 if (response.status === 'success') {
-                    window.location.href = response.redirect;
-                } else {
+
+    window.location.href = response.redirect || '/';
+
+} else if (response.status === 'confirm_required') {
+
+    window.location.href = response.redirect;
+
+} else {
+
+    $('#error-container')
+        .html('<div class="alert alert-danger">' + response.message + '</div>')
+        .removeClass('d-none');
+} else {
                     $('#error-container')
                         .text(response.message)
                         .removeClass('d-none');

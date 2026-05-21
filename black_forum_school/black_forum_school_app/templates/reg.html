@@ -18,7 +18,7 @@
                 <h2 class="text-center mb-4 text-light">
                     Регистрация
                 </h2>
-
+                <div id="error-container" class="d-none mb-3"></div>
                 <form action="/reg/" method="POST" id="reg-form">
 
                     {% csrf_token %}
@@ -212,31 +212,40 @@ $(document).ready(function() {
 
                 console.log(response);
 
-                if (response.status === 'success') {
+                if (
+                    response.status === 'success' ||
+                    response.status === 'confirm_required'
+                ) {
 
-                    $('#success-container')
-                        .html(
-                            '<div class="alert alert-success">' +
-                            'Регистрация успешна!' +
-                            '</div>'
-                        )
-                        .removeClass('d-none');
+                    if (response.message) {
+
+                        $('#success-container')
+                            .html(
+                                '<div class="alert alert-success">' +
+                                response.message +
+                                '</div>'
+                            )
+                            .removeClass('d-none');
+                    }
 
                     setTimeout(function() {
-                        window.location.href = response.redirect || '/';
-                    }, 800);
 
-                }
-                else {
+                        window.location.href =
+                            response.redirect || '/';
+
+                    }, 500);
+
+                } else {
 
                     $('#error-container')
                         .html(
                             '<div class="alert alert-danger">' +
-                            response.message +
+                            (response.message || 'Ошибка регистрации') +
                             '</div>'
                         )
                         .removeClass('d-none');
                 }
+
             },
 
             error: function(xhr) {
@@ -258,9 +267,10 @@ $(document).ready(function() {
                         message = response.message;
                     }
 
-                }
-                catch(e) {
+                } catch(e) {
+
                     console.log(e);
+
                 }
 
                 $('#error-container')
