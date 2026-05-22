@@ -219,12 +219,20 @@ class EmailDigest(models.Model):
     from django.db import models
 from django.contrib.auth.models import User
 
+from django.utils import timezone
+from datetime import timedelta
 
 class EmailCode(models.Model):
     email = models.EmailField()
-    code = models.CharField(max_length=4)
+    code = models.CharField(max_length=6)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    code_type = models.CharField(max_length=20, default='login')
+    
+    def is_expired(self):
+        """Код действителен 240 секунд (4 минуты)"""
+        expiration_time = self.created_at + timedelta(seconds=240)
+        return timezone.now() > expiration_time 
+    
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)

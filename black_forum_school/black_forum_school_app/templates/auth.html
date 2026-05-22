@@ -1,165 +1,188 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}Вход в систему{% endblock %}
+{% block title %}Вход{% endblock %}
 
 {% block css %}
 <link rel="stylesheet" href="{% static 'css/header.css' %}">
-<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+<link rel="stylesheet" href="{% static 'css/reg.css' %}">
 {% endblock %}
 
 {% block content %}
 
-<form style="display:none;">
-    {% csrf_token %}
-</form>
-
-
 <div class="container my-5">
     <div class="row justify-content-center">
-        <div class="col-md-5 col-lg-4">
+        <div class="col-md-6 col-lg-5">
             
-            <div class="auth-card p-4 rounded-3">
-                <h2 class="text-center mb-4 text-light">Вход в аккаунт</h2>
+            <div class="auth-card p-4 p-md-5 rounded-3">
                 
-                <div class="mb-3">
-                    <label for="email" class="form-label text-light">Электронная почта</label>
-                    <input type="email" 
-                           class="form-control bg-dark text-light border-secondary" 
-                           id="email" 
-                           name="email" 
-                           value="{{ request.GET.email }}" 
-                           required>
-                    <div id="emailHelp" class="form-text text-secondary">
-                        Мы никому не расскажем вашу почту
+                <h2 class="text-center mb-4 text-light">Вход</h2>
+                
+                <div id="error-container" class="d-none mb-3"></div>
+                <div id="success-container" class="d-none mb-3"></div>
+                
+                <!-- Форма входа по паролю -->
+                <div id="password-form">
+                    <form id="auth-form">
+                        {% csrf_token %}
+                        
+                        <input type="hidden" name="auth_type" value="password">
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label text-light">
+                                Электронная почта
+                            </label>
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                class="form-control bg-dark text-light border-secondary"
+                                placeholder="Введите e-mail"
+                                required
+                            >
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label text-light">
+                                Пароль
+                            </label>
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                class="form-control bg-dark text-light border-secondary"
+                                placeholder="Введите пароль"
+                            >
+                        </div>
+                        
+                        <button
+                            type="submit"
+                            id="auth-button"
+                            class="btn btn-primary w-100 py-2 mb-3"
+                        >
+                            Войти
+                        </button>
+                    </form>
+                    
+                    <div class="text-center">
+                        <button
+                            id="code-login-btn"
+                            class="btn btn-link text-info text-decoration-none"
+                        >
+                            Войти другим способом   
+                        </button>
                     </div>
                 </div>
                 
-                <div class="mb-3">
-                    <label for="password" class="form-label text-light">Пароль</label>
-                    <input type="password" 
-                           class="form-control bg-dark text-light border-secondary" 
-                           id="password" 
-                           name="password" 
-                           value="{{ request.GET.password }}" 
-                           required>
+                <!-- Форма входа по коду -->
+                 
+                <div id="code-form-container" class="d-none">
+                    <h4 class="text-center mb-3 text-light">Вход по коду</h4>
+                    
+                    
+                    <form id="code-login-form">
+                        {% csrf_token %}
+                        <b class="text-center mb-3 text-info">6-значный код будет отправлен на почту</b>
+                        <hr>
+                        <input type="hidden" name="auth_type" value="code">
+                        
+                        <div class="mb-3">
+                            
+                            <label for="code-email" class="form-label text-light">
+                                Электронная почта
+                            </label>
+                            <input
+                                type="email"
+                                id="code-email"
+                                name="email"
+                                class="form-control bg-dark text-light border-secondary"
+                                placeholder="Введите ваш e-mail"
+                                required
+                            >
+                        </div>
+                        
+                        <button
+                            type="submit"
+                            id="code-send-button"
+                            class="btn btn-warning w-100 py-2 mb-3"
+                        >
+                            Отправить код
+                        </button>
+                    </form>
+                    
+                    <div class="text-center">
+                        <button
+                            id="back-to-password-btn"
+                            class="btn btn-link text-info text-decoration-none"
+                        >
+                            Назад ко входу с паролем
+                        </button>
+                    </div>
                 </div>
-                
-                <div class="mb-3 form-check">
-                    <input type="checkbox" 
-                           class="form-check-input bg-dark border-secondary" 
-                           id="remember-me" 
-                           name="remember_me">
-                    <label class="form-check-label text-light" for="remember-me">
-                        Запомнить меня
-                    </label>
-                </div>
-                
-                <!-- Сообщения об ошибках и успехе -->
-                <div id="error-container" class="error-message alert alert-danger d-none"></div>
-                <div id="success-container" class="success-message alert alert-success d-none"></div>
-                
-                <button type="button" id="auth-button" class="btn btn-primary w-100 py-2 mt-2">
-                    Войти
-                </button>
                 
                 <div class="text-center mt-4">
-                    <a href="/reg" id="come-reg" class="text-info text-decoration-none">
+                    <a href="/reg/" class="text-info text-decoration-none">
                         Нет аккаунта? Зарегистрироваться
                     </a>
                 </div>
+                
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для ввода кода -->
+<div class="modal fade" id="codeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title" id="modal-title">Введите код подтверждения</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="code-error-container" class="d-none mb-3"></div>
+                
+                <p id="code-hint" class="text-muted">Введите код из письма</p>
+                
+                <form id="code-form">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="email-code" class="form-label">
+                            Код подтверждения
+                        </label>
+                        <input
+                            type="text"
+                            id="email-code"
+                            name="email-code"
+                            class="form-control bg-dark text-light border-secondary"
+                            placeholder="Введите код"
+                            maxlength="6"
+                            required
+                        >
+                    </div>
+                    
+                    <button
+                        type="submit"
+                        id="code-button"
+                        class="btn btn-primary w-100 py-2"
+                    >
+                        Подтвердить
+                    </button>
+                </form>
             </div>
         </div>
     </div>
 </div>
 
+<!-- jQuery -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
+<!-- Bootstrap -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
 <script src="{% static 'js/run_awey.js' %}"></script>
-<script>
-$(document).ready(function() {
-    function getUrlParameter(name) {
-        name = name.replace(/[\[\]]/g, '\\$&');
-        var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
-        var results = regex.exec(window.location.href);
-        if (!results) return null;
-        if (!results[2]) return '';
-        return decodeURIComponent(results[2].replace(/\+/g, ' '));
-    }
 
-    // Показываем сообщение об успешной регистрации
-    var message = getUrlParameter('message');
-    if (message) {
-        $('#success-container')
-            .text(decodeURIComponent(message))
-            .removeClass('d-none')
-            .show();
-        
-        setTimeout(function() {
-            $('#success-container').fadeOut();
-        }, 5000);
-    }
-
-    // Обработка входа
-    $('#auth-button').on('click', function() {
-        $('#error-container').addClass('d-none').empty();
-        $('#success-container').addClass('d-none').empty();
-
-        var email = $('#email').val().trim();
-        var password = $('#password').val().trim();
-        var rememberMe = $('#remember-me').is(':checked');
-
-        if (!email || !password) {
-            $('#error-container')
-                .text('Заполните все поля')
-                .removeClass('d-none');
-            return;
-        }
-
-        $.ajax({
-            url: '/auth/',
-            type: 'POST',
-            data: {
-                'email': email,
-                'password': password,
-                'remember_me': rememberMe,
-            },
-            success: function(response) {
-                if (response.status === 'success') {
-
-    window.location.href = response.redirect || '/';
-
-} else if (response.status === 'confirm_required') {
-
-    window.location.href = response.redirect;
-
-} else {
-
-    $('#error-container')
-        .html('<div class="alert alert-danger">' + response.message + '</div>')
-        .removeClass('d-none');
-} else {
-                    $('#error-container')
-                        .text(response.message)
-                        .removeClass('d-none');
-                }
-            },
-            error: function() {
-                $('#error-container')
-                    .text('Произошла ошибка при отправке запроса')
-                    .removeClass('d-none');
-            }
-        });
-    });
-
-    // Enter для отправки
-    $('#email, #password').on('keypress', function(e) {
-        if (e.which === 13) {
-            $('#auth-button').click();
-        }
-    });
-});
-
-
-        
-
-</script>
 {% endblock %}
+
+{% include 'footer.html' %}

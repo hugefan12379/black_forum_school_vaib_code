@@ -18,7 +18,7 @@
                 <h2 class="text-center mb-4 text-light">
                     Регистрация
                 </h2>
-                <div id="error-container" class="d-none mb-3"></div>
+                
                 <form action="/reg/" method="POST" id="reg-form">
 
                     {% csrf_token %}
@@ -27,7 +27,6 @@
                         <label for="first-name" class="form-label text-light">
                             Имя
                         </label>
-
                         <input
                             type="text"
                             id="first-name"
@@ -42,7 +41,6 @@
                         <label for="last-name" class="form-label text-light">
                             Фамилия
                         </label>
-
                         <input
                             type="text"
                             id="last-name"
@@ -57,7 +55,6 @@
                         <label for="email" class="form-label text-light">
                             Электронная почта
                         </label>
-
                         <input
                             type="email"
                             id="email"
@@ -72,14 +69,13 @@
                         <label for="password" class="form-label text-light">
                             Пароль
                         </label>
-
                         <input
                             type="password"
                             id="password"
                             name="password"
                             class="form-control bg-dark text-light border-secondary"
-                            placeholder="Введите пароль"
-                            minlength="6"
+                            placeholder="Минимум 8 символов, заглавная буква и цифра"
+                            minlength="8"
                             required
                         >
                     </div>
@@ -88,7 +84,6 @@
                         <label for="confirm_password" class="form-label text-light">
                             Подтвердите пароль
                         </label>
-
                         <input
                             type="password"
                             id="confirm_password"
@@ -103,7 +98,6 @@
                         <label for="class_info" class="form-label text-light">
                             Класс
                         </label>
-
                         <input
                             type="text"
                             id="class_info"
@@ -115,7 +109,6 @@
                     </div>
 
                     <div class="mb-4 form-check">
-
                         <input
                             type="checkbox"
                             id="agree"
@@ -123,36 +116,30 @@
                             class="form-check-input bg-dark border-secondary"
                             required
                         >
-
                         <label for="agree" class="form-check-label text-light">
                             Я согласен с
                             <a href="{% url 'rules' %}" class="text-info">
                                 условиями использования
                             </a>
                         </label>
-
                     </div>
-
-                    <!-- Ошибки -->
-                    <div id="error-container" class="d-none mb-3"></div>
-
-                    <!-- Успех -->
-                    <div id="success-container" class="d-none mb-3"></div>
 
                     <button
                         type="submit"
                         id="reg-button"
-                        class="btn btn-primary w-100 py-2"
+                        class="btn btn-primary w-100 py-2 mb-3"
                     >
                         Зарегистрироваться
                     </button>
 
-                    <div class="text-center mt-4">
+                    <!-- Блоки ошибок и успеха ПОД кнопкой -->
+                    <div id="error-container" class="d-none"></div>
+                    <div id="success-container" class="d-none"></div>
 
+                    <div class="text-center mt-4">
                         <a href="/auth/" class="text-info text-decoration-none">
                             Уже есть аккаунт? Войти
                         </a>
-
                     </div>
 
                 </form>
@@ -185,40 +172,47 @@ $(document).ready(function() {
 
         isSending = true;
 
-        $('#reg-button').prop('disabled', true);
+        $('#reg-button').prop('disabled', true).text('Отправка...');
 
-        $('#error-container')
-            .addClass('d-none')
-            .empty();
-
-        $('#success-container')
-            .addClass('d-none')
-            .empty();
+        // Скрываем оба контейнера
+        $('#error-container').addClass('d-none').empty();
+        $('#success-container').addClass('d-none').empty();
 
         $.ajax({
 
             url: '/reg/',
             type: 'POST',
-
             data: $(this).serialize(),
-
             dataType: 'json',
 
             success: function(response) {
 
                 isSending = false;
+                $('#reg-button').prop('disabled', false).text('Зарегистрироваться');
 
-                $('#reg-button').prop('disabled', false);
+                console.log('Reg response:', response);
 
-                console.log(response);
+                if (response.status === 'confirm_required') {
 
-                if (
-                    response.status === 'success' ||
-                    response.status === 'confirm_required'
-                ) {
+                    // Показываем успех
+                    if (response.message) {
+                        $('#success-container')
+                            .html(
+                                '<div class="alert alert-success">' +
+                                response.message +
+                                '</div>'
+                            )
+                            .removeClass('d-none');
+                    }
+
+                    // Редирект на страницу подтверждения
+                    setTimeout(function() {
+                        window.location.href = response.redirect || '/confirm/';
+                    }, 1000);
+
+                } else if (response.status === 'success') {
 
                     if (response.message) {
-
                         $('#success-container')
                             .html(
                                 '<div class="alert alert-success">' +
@@ -229,14 +223,12 @@ $(document).ready(function() {
                     }
 
                     setTimeout(function() {
-
-                        window.location.href =
-                            response.redirect || '/';
-
+                        window.location.href = response.redirect || '/';
                     }, 500);
 
                 } else {
 
+                    // Ошибка
                     $('#error-container')
                         .html(
                             '<div class="alert alert-danger">' +
@@ -251,26 +243,20 @@ $(document).ready(function() {
             error: function(xhr) {
 
                 isSending = false;
+                $('#reg-button').prop('disabled', false).text('Зарегистрироваться');
 
-                $('#reg-button').prop('disabled', false);
-
-                console.log(xhr);
-                console.log(xhr.responseText);
+                console.log('Reg error:', xhr);
+                console.log('Response:', xhr.responseText);
 
                 let message = 'Ошибка регистрации';
 
                 try {
-
                     const response = JSON.parse(xhr.responseText);
-
                     if (response.message) {
                         message = response.message;
                     }
-
                 } catch(e) {
-
-                    console.log(e);
-
+                    console.log('Parse error:', e);
                 }
 
                 $('#error-container')

@@ -1,150 +1,132 @@
 {% extends 'base.html' %}
 {% load static %}
-
-{% block title %}
-Подтверждение
-{% endblock %}
+{% block title %}Подтверждение почты{% endblock %}
 
 {% block css %}
 <link rel="stylesheet" href="{% static 'css/header.css' %}">
-<link rel="stylesheet" href="{% static 'css/interesting.css' %}">
-<link rel="stylesheet" href="{% static 'css/hfeedback.css' %}">
+<link rel="stylesheet" href="{% static 'css/reg.css' %}">
 {% endblock %}
 
 {% block content %}
 
 <div class="container my-5">
-
     <div class="row justify-content-center">
-
         <div class="col-md-6 col-lg-5">
-
-            <div class="forum-cta text-center">
-
-                <h2>
-                    📧 Подтверждение
-                </h2>
-
-                <p class="mt-3">
-                    Мы отправили код подтверждения на вашу почту
+            
+            <div class="auth-card p-4 p-md-5 rounded-3">
+                
+                <h2 class="text-center mb-4 text-light">Подтверждение почты</h2>
+                
+                <p class="text-muted text-center">
+                    Код отправлен на почту<br>
+                    <strong class="text-light">{{ user_email }}</strong>
                 </p>
-
-                <div
-                    id="error-container"
-                    class="d-none mb-3"
-                ></div>
-
+                
+                <div id="error-container" class="d-none"></div>
+                <div id="success-container" class="d-none"></div>
+                
                 <form id="confirm-form">
-
                     {% csrf_token %}
-
-                    <input
-                        type="text"
-                        name="email-code"
-                        id="email-code"
-                        class="form-control bg-dark text-light border-secondary mt-4"
-                        placeholder="Введите код"
-                        maxlength="4"
-                        autocomplete="off"
-                        required
-                    >
-
+                    
+                    <input type="hidden" name="user_id" value="{{ user_id }}">
+                    <input type="hidden" name="user_email" value="{{ user_email }}">
+                    
+                    <div class="mb-3">
+                        <label for="email-code" class="form-label text-light">
+                            Код подтверждения
+                        </label>
+                        <input
+                            type="text"
+                            id="email-code"
+                            name="email-code"
+                            class="form-control bg-dark text-light border-secondary"
+                            placeholder="Введите 4-значный код"
+                            maxlength="4"
+                            required
+                        >
+                    </div>
+                    
                     <button
                         type="submit"
-                        class="btn btn-light btn-lg mt-4 px-5"
+                        id="confirm-button"
+                        class="btn btn-primary w-100 py-2 mb-3"
                     >
-                        Подтвердить →
+                        Подтвердить
                     </button>
-
+                    
+                    <div class="text-center">
+                        <a href="/reg/" class="text-info text-decoration-none">
+                            Назад к регистрации
+                        </a>
+                    </div>
                 </form>
-
+                
             </div>
-
+            
         </div>
-
     </div>
-
 </div>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
 <script>
-
 $(document).ready(function() {
-
+    
     $('#confirm-form').on('submit', function(e) {
-
         e.preventDefault();
-
-        $('#error-container')
-            .addClass('d-none')
-            .html('');
-
+        
+        const code = $('#email-code').val().trim();
+        
+        if (!code) {
+            $('#error-container')
+                .html('<div class="alert alert-danger">Введите код</div>')
+                .removeClass('d-none');
+            return;
+        }
+        
+        $('#confirm-button').prop('disabled', true).text('Проверка...');
+        $('#error-container').addClass('d-none').empty();
+        $('#success-container').addClass('d-none').empty();
+        
         $.ajax({
-
-            url: window.location.pathname,
-
+            url: '/confirm/',
             type: 'POST',
-
             data: $(this).serialize(),
-
             dataType: 'json',
-
             success: function(response) {
-
-                console.log(response);
-
                 if (response.status === 'success') {
-
-                    window.location.href = response.redirect;
-
-                } else {
-
-                    $('#error-container')
-                        .html(
-                            '<div class="alert alert-danger">' +
-                            response.message +
-                            '</div>'
-                        )
+                    $('#success-container')
+                        .html('<div class="alert alert-success">Успешно!</div>')
                         .removeClass('d-none');
+                    
+                    setTimeout(function() {
+                        window.location.href = response.redirect || '/';
+                    }, 500);
+                } else {
+                    $('#error-container')
+                        .html('<div class="alert alert-danger">' + 
+                            (response.message || 'Ошибка') + 
+                        '</div>')
+                        .removeClass('d-none');
+                    $('#confirm-button').prop('disabled', false).text('Подтвердить');
                 }
             },
-
             error: function(xhr) {
-
-                console.log(xhr.responseText);
-
-                let msg = 'Ошибка сервера';
-
+                let message = 'Ошибка сервера';
                 try {
-
                     const response = JSON.parse(xhr.responseText);
-
-                    if (response.message) {
-                        msg = response.message;
-                    }
-
-                } catch(e) {
-
-                    console.log(e);
-
-                }
-
+                    if (response.message) message = response.message;
+                } catch(e) {}
+                
                 $('#error-container')
-                    .html(
-                        '<div class="alert alert-danger">' +
-                        msg +
-                        '</div>'
-                    )
+                    .html('<div class="alert alert-danger">' + message + '</div>')
                     .removeClass('d-none');
+                $('#confirm-button').prop('disabled', false).text('Подтвердить');
             }
-
         });
-
     });
-
+    
 });
-
 </script>
 
 {% endblock %}

@@ -61,12 +61,12 @@ NSFW_THRESHOLD = 0.25
 # =========================
 # ВСПОМОГАТЕЛЬНОЕ
 # =========================
-def generate_code():
-
+def generate_code(length=4):
+    """Генерирует код указанной длины"""
     return ''.join(
         random.choices(
             string.ascii_uppercase + string.digits,
-            k=4
+            k=length
         )
     )
 
@@ -161,259 +161,10 @@ def index(request):
     return render(request, "index.html")
 
 
-def auth(request):
-
-    if request.method == "POST":
-
-        email = request.POST.get("email")
-        password = request.POST.get("password")
-
-        user = authenticate(
-            request,
-            username=email,
-            password=password,
-        )
-
-        if not user:
-
-            return JsonResponse({
-                "status": "error",
-                "message": "Неверные данные"
-            })
-
-        if not user.is_active:
-
-            return JsonResponse({
-                "status": "error",
-                "message": "Подтвердите почту"
-            })
-
-        profile, created = Profile.objects.get_or_create(
-            user=user
-        )
-
-        if profile.two_factor_enabled:
-
-            code = generate_code()
-
-            EmailCode.objects.create(
-                email=user.email,
-                code=code
-            )
-
-            threading.Thread(
-                target=send_email_code_async,
-                args=(user.email, code)
-            ).start()
-
-            request.session[
-                "pending_login_user_id"
-            ] = user.id
-
-            return JsonResponse({
-                "status": "confirm_required",
-                "redirect": "/confirm-login/"
-            })
-
-        login(request, user)
-
-        return JsonResponse({
-            "status": "success",
-            "redirect": "/"
-        })
-
-    return render(request, "auth.html")
 
 
-def reg(request):
-
-    if request.method == "POST":
-
-        email = request.POST.get("email")
-        password = request.POST.get("password")
-        confirm = request.POST.get("confirm_password")
-
-        first_name = request.POST.get(
-            "first_name",
-            ""
-        )
-
-        last_name = request.POST.get(
-            "last_name",
-            ""
-        )
-
-        if password != confirm:
-
-            return JsonResponse({
-                "status": "error",
-                "message": "Пароли не совпадают"
-            })
-
-        if User.objects.filter(
-            username=email
-        ).exists():
-
-            return JsonResponse({
-                "status": "error",
-                "message": "Пользователь уже существует"
-            })
-
-        try:
-
-            validate_email(email)
-
-        except ValidationError:
-
-            return JsonResponse({
-                "status": "error",
-                "message": "Неверная почта"
-            })
-
-        user = User.objects.create_user(
-            username=email,
-            email=email,
-            password=password,
-            first_name=first_name,
-            last_name=last_name,
-            is_active=False
-        )
-
-        Profile.objects.get_or_create(
-            user=user
-        )
-
-        code = generate_code()
-
-        EmailCode.objects.create(
-            email=email,
-            code=code
-        )
-
-        threading.Thread(
-            target=send_email_code_async,
-            args=(email, code)
-        ).start()
-
-        request.session[
-            'pending_user_id'
-        ] = user.id
-
-        return JsonResponse({
-            "status": "confirm_required",
-            "message": "Код отправлен на почту",
-            "redirect": "/confirm/"
-        })
-
-    return render(request, "reg.html")
 
 
-def confirm(request):
-    if request.method == 'POST':
-        code = request.POST.get('email-code')
-        user_id = request.session.get('pending_user_id')
-
-        if not user_id:
-            return JsonResponse({
-                'status': 'error',
-                'message': 'Сессия истекла'
-            })
-
-        try:
-            user = User.objects.get(id=user_id)
-            email_code = EmailCode.objects.filter(email=user.email).last()
-
-            if not email_code:
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'Код не найден'
-                })
-
-            if email_code.code != code:
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'Неверный код'
-                })
-
-            if email_code.is_expired():
-                email_code.delete()
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'Код истёк'
-                })
-
-            user.is_active = True
-            user.save()
-            email_code.delete()
-            login(request, user)
-            del request.session['pending_user_id']
-
-            return JsonResponse({
-                'status': 'success',
-                'redirect': '/'
-            })
-
-        except Exception as e:
-            print("CONFIRM ERROR:", e)
-            return JsonResponse({
-                'status': 'error',
-                'message': str(e)
-            })
-
-    return render(request, 'confirm.html')
-
-
-def confirm_login(request):
-    if request.method == 'POST':
-        code = request.POST.get('email-code')
-        user_id = request.session.get('pending_login_user_id')
-
-        if not user_id:
-            return JsonResponse({
-                'status': 'error',
-                'message': 'Сессия истекла'
-            })
-
-        try:
-            user = User.objects.get(id=user_id)
-            email_code = EmailCode.objects.filter(email=user.email).last()
-
-            if not email_code:
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'Код не найден'
-                })
-
-            if email_code.code != code:
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'Неверный код'
-                })
-
-            if email_code.is_expired():
-                email_code.delete()
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'Код истёк'
-                })
-
-            email_code.delete()
-            login(request, user)
-            del request.session['pending_login_user_id']
-
-            return JsonResponse({
-                'status': 'success',
-                'redirect': '/'
-            })
-
-        except Exception as e:
-            print("CONFIRM ERROR:", e)
-            return JsonResponse({
-                'status': 'error',
-                'message': str(e)
-            })
-
-    return render(request, 'confirm.html')
 
 
 def email(request):
@@ -814,43 +565,426 @@ def questions_view(request):
     )
 
 
-@login_required
-def account(request):
-
-    profile, created = Profile.objects.get_or_create(
-        user=request.user
+def generate_code(length=4):
+    """Генерирует код указанной длины"""
+    return ''.join(
+        random.choices(
+            string.ascii_uppercase + string.digits,
+            k=length
+        )
     )
 
+
+def auth(request):
     if request.method == "POST":
+        email = request.POST.get("email")
+        password = request.POST.get("password")
+        auth_type = request.POST.get("auth_type", "password")
+        
+        # Авторизация только по коду (без пароля)
+        if auth_type == "code":
+            try:
+                user = User.objects.get(username=email)
+                
+                if not user.is_active:
+                    return JsonResponse({
+                        "status": "error",
+                        "message": "Подтвердите почту"
+                    })
+                
+            except User.DoesNotExist:
+                return JsonResponse({
+                    "status": "error",
+                    "message": "Пользователь не найден"
+                })
+            
+            code = generate_code(length=6)
+            
+            EmailCode.objects.create(
+                email=user.email,
+                code=code,
+                code_type='code_login'
+            )
+            
+            threading.Thread(
+                target=send_email_code_async,
+                args=(user.email, code)
+            ).start()
+            
+            request.session["pending_login_user_id"] = user.id
+            request.session["login_type"] = "code"
+            
+            return JsonResponse({
+                "status": "code_sent",
+                "message": "6-значный код отправлен на почту"
+            })
+        
+        # Авторизация по паролю
+        user = authenticate(request, username=email, password=password)
+        
+        if not user:
+            return JsonResponse({
+                "status": "error",
+                "message": "Неверные данные"
+            })
+        
+        if not user.is_active:
+            return JsonResponse({
+                "status": "error",
+                "message": "Подтвердите почту"
+            })
+        
+        profile, created = Profile.objects.get_or_create(user=user)
+        
+        if profile.two_factor_enabled:
+            code = generate_code(length=4)
+            
+            EmailCode.objects.create(
+                email=user.email,
+                code=code,
+                code_type='login'
+            )
+            
+            threading.Thread(
+                target=send_email_code_async,
+                args=(user.email, code)
+            ).start()
+            
+            request.session["pending_login_user_id"] = user.id
+            request.session["login_type"] = "password_2fa"
+            
+            return JsonResponse({
+                "status": "code_required",
+                "message": "Код подтверждения отправлен на почту"
+            })
+        
+        login(request, user)
+        
+        return JsonResponse({
+            "status": "success",
+            "redirect": "/"
+        })
+    
+    return render(request, "auth.html")
 
+
+def reg(request):
+    if request.method == "POST":
+        email = request.POST.get("email")
+        password = request.POST.get("password")
+        confirm_password = request.POST.get("confirm_password")
+        first_name = request.POST.get("first_name", "")
+        last_name = request.POST.get("last_name", "")
+
+        if password != confirm_password:
+            return JsonResponse({
+                "status": "error",
+                "message": "Пароли не совпадают"
+            })
+
+        if User.objects.filter(username=email, is_active=True).exists():
+            return JsonResponse({
+                "status": "error",
+                "message": "Пользователь уже существует"
+            })
+        
+        User.objects.filter(username=email, is_active=False).delete()
+        EmailCode.objects.filter(email=email).delete()
+
+        try:
+            validate_email(email)
+        except ValidationError:
+            return JsonResponse({
+                "status": "error",
+                "message": "Неверная почта"
+            })
+
+        if len(password) < 8:
+            return JsonResponse({
+                "status": "error",
+                "message": "Пароль должен быть минимум 8 символов"
+            })
+        
+        if not any(c.isupper() for c in password):
+            return JsonResponse({
+                "status": "error",
+                "message": "Пароль должен содержать хотя бы одну заглавную букву"
+            })
+        
+        if not any(c.isdigit() for c in password):
+            return JsonResponse({
+                "status": "error",
+                "message": "Пароль должен содержать хотя бы одну цифру"
+            })
+
+        user = User.objects.create_user(
+            username=email,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+            is_active=False
+        )
+
+        Profile.objects.get_or_create(user=user)
+
+        code = generate_code(length=4)
+
+        EmailCode.objects.create(
+            email=email,
+            code=code,
+            code_type='register'
+        )
+
+        threading.Thread(
+            target=send_email_code_async,
+            args=(email, code)
+        ).start()
+
+        # Возвращаем ID пользователя в ответе
+        return JsonResponse({
+            "status": "confirm_required",
+            "message": f"Код отправлен на почту {email}. Действителен 4 минуты.",
+            "redirect": f"/confirm/?uid={user.id}&email={email}"
+        })
+
+    return render(request, "reg.html")
+
+
+def confirm(request):
+    # Если GET-запрос — показываем страницу
+    if request.method == 'GET':
+        user_id = request.session.get('pending_user_id')
+        print(f"[CONFIRM GET] Session key: {request.session.session_key}")
+        print(f"[CONFIRM GET] pending_user_id: {user_id}")
+        return render(request, 'confirm.html')
+    
+    # Если POST-запрос — проверяем код
+    if request.method == 'POST':
+        code = request.POST.get('email-code')
+        user_id = request.session.get('pending_user_id')
+        
+        print(f"[CONFIRM POST] Session key: {request.session.session_key}")
+        print(f"[CONFIRM POST] pending_user_id: {user_id}")
+        print(f"[CONFIRM POST] Code: {code}")
+
+        if not user_id:
+            # Пробуем восстановить по email
+            email = request.session.get('pending_user_email')
+            print(f"[CONFIRM POST] Trying email: {email}")
+            
+            if email:
+                try:
+                    user = User.objects.get(username=email, is_active=False)
+                    user_id = user.id
+                    request.session['pending_user_id'] = user_id
+                    request.session.modified = True
+                    print(f"[CONFIRM POST] Restored user_id: {user_id}")
+                except User.DoesNotExist:
+                    print(f"[CONFIRM POST] User not found for email: {email}")
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'Пользователь не найден. Зарегистрируйтесь заново.'
+                    })
+            else:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Сессия истекла. Зарегистрируйтесь заново.'
+                })
+
+        try:
+            user = User.objects.get(id=user_id)
+            
+            # Проверяем время жизни
+            time_since_creation = timezone.now() - user.date_joined
+            print(f"[CONFIRM POST] Time since creation: {time_since_creation.total_seconds()}s")
+            
+            if time_since_creation.total_seconds() > 240:
+                EmailCode.objects.filter(email=user.email).delete()
+                user.delete()
+                request.session.pop('pending_user_id', None)
+                request.session.pop('pending_user_email', None)
+                
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Время вышло (4 минуты). Зарегистрируйтесь заново.'
+                })
+            
+            email_code = EmailCode.objects.filter(
+                email=user.email,
+                code_type='register'
+            ).last()
+
+            if not email_code:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Код не найден. Запросите новый.'
+                })
+
+            if email_code.code != code:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Неверный код'
+                })
+
+            if email_code.is_expired():
+                email_code.delete()
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Код истёк. Зарегистрируйтесь заново.'
+                })
+
+            user.is_active = True
+            user.save()
+            email_code.delete()
+            login(request, user)
+            
+            request.session.pop('pending_user_id', None)
+            request.session.pop('pending_user_email', None)
+
+            return JsonResponse({
+                'status': 'success',
+                'redirect': '/'
+            })
+
+        except User.DoesNotExist:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Пользователь не найден. Зарегистрируйтесь заново.'
+            })
+        except Exception as e:
+            print("CONFIRM ERROR:", e)
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Ошибка сервера. Попробуйте позже.'
+            })
+
+    return render(request, 'confirm.html')
+
+
+def confirm_login(request):
+    if request.method == 'POST':
+        code = request.POST.get('email-code')
+        user_id = request.session.get('pending_login_user_id')
+        login_type = request.session.get('login_type', 'password_2fa')
+
+        if not user_id:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Сессия истекла'
+            })
+
+        try:
+            user = User.objects.get(id=user_id)
+            
+            # Выбираем тип кода в зависимости от типа входа
+            if login_type == "code":
+                code_type_filter = 'code_login'
+            else:
+                code_type_filter = 'login'
+            
+            email_code = EmailCode.objects.filter(
+                email=user.email,
+                code_type=code_type_filter
+            ).last()
+
+            if not email_code:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Код не найден'
+                })
+
+            if email_code.code != code:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Неверный код'
+                })
+
+            if email_code.is_expired():
+                email_code.delete()
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Код истёк'
+                })
+
+            email_code.delete()
+            login(request, user)
+            del request.session['pending_login_user_id']
+            del request.session['login_type']
+
+            return JsonResponse({
+                'status': 'success',
+                'redirect': '/'
+            })
+
+        except Exception as e:
+            print("CONFIRM ERROR:", e)
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            })
+
+    return render(request, 'confirm.html')
+
+
+@login_required
+def account(request):
+    profile, created = Profile.objects.get_or_create(user=request.user)
+    
+    if request.method == "POST":
+        # Сохраняем имя и фамилию
+        first_name = request.POST.get("first_name")
+        last_name = request.POST.get("last_name")
+        
+        if first_name:
+            request.user.first_name = first_name
+        if last_name:
+            request.user.last_name = last_name
+        
+        # Сохраняем почту
+        email = request.POST.get("email")
+        if email and email != request.user.email:
+            if User.objects.filter(email=email).exclude(id=request.user.id).exists():
+                messages.error(request, "Эта почта уже используется")
+            else:
+                request.user.email = email
+                request.user.username = email
+        
+        # Сохраняем пароль (с проверкой требований)
+        new_password = request.POST.get("password")
+        if new_password:
+            if len(new_password) < 8:
+                messages.error(request, "Пароль должен быть минимум 8 символов")
+            elif not any(c.isupper() for c in new_password):
+                messages.error(request, "Пароль должен содержать хотя бы одну заглавную букву")
+            elif not any(c.isdigit() for c in new_password):
+                messages.error(request, "Пароль должен содержать хотя бы одну цифру")
+            else:
+                request.user.set_password(new_password)
+                update_session_auth_hash(request, request.user)
+                messages.success(request, "Пароль изменён")
+        
+        # Сохраняем настройки двухфакторки
         profile.two_factor_enabled = (
-            request.POST.get("two_factor")
-            == "on"
+            request.POST.get("two_factor") == "on"
         )
-
         profile.save()
-
-        messages.success(
-            request,
-            "Настройки сохранены"
-        )
-
+        
+        request.user.save()
+        messages.success(request, "Настройки сохранены")
+        
         return redirect("account")
-
+    
     context = {
-
         'username': request.user.username,
         'first_name': request.user.first_name,
         'last_name': request.user.last_name,
         'email': request.user.email,
+        'birthdate': '',
         'profile': profile,
     }
-
-    return render(
-        request,
-        'account.html',
-        context
-    )
+    
+    return render(request, 'account.html', context)
 
 
 def rules(request):
@@ -860,3 +994,42 @@ def rules(request):
         "rules.html"
     )
 
+import threading
+import time
+
+# ... все ваши импорты ...
+
+# =========================
+# АВТООЧИСТКА НЕПОДТВЕРЖДЁННЫХ ПОЛЬЗОВАТЕЛЕЙ
+# =========================
+def cleanup_unconfirmed_users():
+    """Удаляет неподтверждённых пользователей каждые 120 секунд"""
+    while True:
+        try:
+            now = timezone.now()
+            cutoff_time = now - timedelta(seconds=120)
+            
+            # Находим неподтверждённых пользователей старше 120 секунд
+            unconfirmed_users = User.objects.filter(
+                is_active=False,
+                date_joined__lt=cutoff_time
+            )
+            
+            count = unconfirmed_users.count()
+            if count > 0:
+                # Удаляем их коды подтверждения
+                emails = unconfirmed_users.values_list('email', flat=True)
+                EmailCode.objects.filter(email__in=emails).delete()
+                
+                # Удаляем пользователей
+                unconfirmed_users.delete()
+                print(f"[CLEANUP] Удалено {count} неподтверждённых пользователей")
+            
+        except Exception as e:
+            print(f"[CLEANUP ERROR] {e}")
+        
+        time.sleep(120)  # Проверка каждые 120 секунд
+
+# Запускаем очистку в фоновом потоке при старте сервера
+cleanup_thread = threading.Thread(target=cleanup_unconfirmed_users, daemon=True)
+cleanup_thread.start()

@@ -8,79 +8,45 @@
 {% endblock %}
 
 {% block content %}
-    {% csrf_token %}
     <main class="container account">
         <h1>Настройки профиля</h1>
-        <!-- Имя -->
-        <label for="first-name" class="form-label">Имя</label>
-        <input type="text" class="form-control" id="first-name" placeholder="Введите имя" value="{{ first_name }}">
+        
+        <form method="POST">
+            {% csrf_token %}
+            
+            <!-- Имя -->
+            <label for="first-name" class="form-label">Имя</label>
+            <input type="text" class="form-control" id="first-name" name="first_name" placeholder="Введите имя" value="{{ first_name }}">
 
-        <!-- Фамилия -->
-        <label for="last-name" class="form-label reg-label">Фамилия</label>
-        <input type="text" class="form-control" id="last-name" placeholder="Введите фамилию" value="{{ last_name }}">
+            <!-- Фамилия -->
+            <label for="last-name" class="form-label reg-label">Фамилия</label>
+            <input type="text" class="form-control" id="last-name" name="last_name" placeholder="Введите фамилию" value="{{ last_name }}">
 
-        <!-- Дата рождения -->
-        <label for="birthdate" class="form-label reg-label">Дата рождения</label>
-        <input type="date" class="form-control" id="birthdate" placeholder="Введите дату рождения" value="{{ birthdate }}" disabled>
-        <small id="birthdate-info" class="form-text text-muted">Извините, дату рождения изменить нельзя.</small>
-        <br>
+            <!-- Почта -->
+            <label for="email" class="form-label reg-label">Электронная почта</label>
+            <input type="email" class="form-control" id="email" name="email" placeholder="Введите почту" value="{{ email }}">
 
-        <!-- Почта -->
-        <label for="email" class="form-label reg-label">Электронная почта</label>
-        <input type="email" class="form-control" id="email" placeholder="Введите почту" value="{{ email }}">
+            <!-- Пароль -->
+            <label for="password" class="form-label reg-label">Новый пароль (не менее 6 символов. Оставьте пустым, если не хотите менять)</label>
+            <input type="password" class="form-control" id="password" name="password" minlength="6" placeholder="Введите новый пароль">
 
-        <!-- Пароль -->
-        <label for="password" class="form-label reg-label">Пароль</label>
-        <input type="text" class="form-control" id="password" placeholder="Введите пароль" value="{{ password }}">
+            <!-- Двухфакторная аутентификация -->
+            <label class="form-check-label" style="margin-top: 15px;">
+                <input
+                    type="checkbox"
+                    name="two_factor"
+                    {% if profile.two_factor_enabled %}
+                    checked
+                    {% endif %}
+                >
+                Подтверждение входа по почте
+            </label>
 
-        <!-- Кнопка регистрации -->
-        <input type="button" class="btn btn-dark" id="save-button" value="Сохранить">
+            <!-- Кнопка сохранения -->
+            <button type="submit" class="btn btn-dark" id="save-button" style="display: block; margin-top: 20px;">Сохранить</button>
+        </form>
     </main>   
-    <form method="POST">
-
-    {% csrf_token %}
-
-    <label>
-
-        <input
-            type="checkbox"
-            name="two_factor"
-
-            {% if profile.two_factor_enabled %}
-            checked
-            {% endif %}
-        >
-
-        Подтверждение входа по почте
-
-    </label>
-
-    <button type="submit">
-        Сохранить
-    </button>
-
-</form>
 {% endblock %}
-```html
-<form method="POST">
-
-    {% csrf_token %}
-
-    <input
-        type="checkbox"
-        name="two_factor"
-
-        {% if profile.two_factor_enabled %}
-        checked
-        {% endif %}
-    >
-
-    <button type="submit">
-        Сохранить
-    </button>
-
-</form>
-```
 
 {% block js %}
     <script type="text/javascript" src={% static 'js/account.js' %}></script>
