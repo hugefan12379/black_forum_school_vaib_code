@@ -5,7 +5,7 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('auth/', views.auth, name='auth'),
     path('reg/', views.reg, name='reg'),
-    path('question/', views.question, name='question'),
+    path('questions/', views.questions_view, name='questions'),  # ← ИСПРАВЛЕНО
     path('images/', views.images, name='images'),
     path('logout/', views.logout_view, name='logout'),
 
@@ -25,12 +25,8 @@ urlpatterns = [
     path("questions/", views.questions_view, name="questions"),
     path('account/', views.account, name='account'),
     path('rules/', views.rules, name='rules'),
-    path('comfirm/', views.confirm, name='confirm'),
-path(
-    "confirm/",
-    views.confirm,
-    name="confirm"
-),
+    path('confirm/', views.confirm, name='confirm'),
+    path('logout-all/', views.logout_all_devices, name='logout_all'),
 
 path(
     "confirm-login/",

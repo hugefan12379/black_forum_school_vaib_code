@@ -12,6 +12,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 
+from django.contrib.sessions.models import Session
 from django.core.mail import send_mail
 from django.core.validators import validate_email
 from django.core.exceptions import (
@@ -509,12 +510,51 @@ def forum_post_detail(request, post_id):
 # =========================
 # ПРОСТЫЕ СТРАНИЦЫ
 # =========================
-def question(request):
+from django.contrib import messages
+from django.utils import timezone
+from datetime import datetime, date
 
-    return render(
-        request,
-        "question.html"
-    )
+@login_required
+def questions_view(request):
+    # Получаем вопросы пользователей (только видимые)
+    user_questions = Question.objects.filter(is_visible=True).order_by('-created_at')
+    
+    # Подсчёт вопросов пользователя за сегодня
+    today = timezone.now().date()
+    questions_today = Question.objects.filter(
+        author=request.user,
+        created_at__date=today
+    ).count()
+    
+    if request.method == 'POST':
+        question_text = request.POST.get('question_text')
+        
+        if not question_text or not question_text.strip():
+            messages.error(request, "Вопрос не может быть пустым")
+            return redirect('questions')
+        
+        # Проверка лимита: максимум 2 вопроса в день
+        if questions_today >= 2:
+            messages.error(request, "Вы превысили лимит вопросов на сегодня (максимум 2 вопроса в день)")
+            return redirect('questions')
+        
+        # Создаём вопрос
+        Question.objects.create(
+            author=request.user,
+            text=question_text.strip(),
+            is_answered=False,
+            is_visible=True  # Сразу виден на сайте
+        )
+        
+        messages.success(request, f"Ваш вопрос отправлен! Осталось вопросов на сегодня: {1 - questions_today}")
+        return redirect('questions')
+    
+    context = {
+        'questions': user_questions,
+        'user_questions': user_questions,  # для совместимости
+        'questions_today': questions_today,
+    }
+    return render(request, 'questions.html', context)
 
 
 def images(request):
@@ -532,37 +572,6 @@ def questions(request):
         "questions.html"
     )
 
-
-@login_required
-def questions_view(request):
-
-    if request.method == 'POST':
-
-        question_text = request.POST.get(
-            'question_text'
-        )
-
-        if (
-            question_text
-            and question_text.strip()
-        ):
-
-            Question.objects.create(
-                author=request.user,
-                text=question_text.strip()
-            )
-
-            return redirect('questions')
-
-    questions = Question.objects.all()
-
-    return render(
-        request,
-        'questions.html',
-        {
-            'questions': questions
-        }
-    )
 
 
 def generate_code(length=4):
@@ -728,6 +737,11 @@ def reg(request):
 
         Profile.objects.get_or_create(user=user)
 
+        # ========== ИСПРАВЛЕНИЕ: сохраняем ID пользователя в сессию ==========
+        request.session['pending_user_id'] = user.id
+        request.session['pending_user_email'] = email
+        # ====================================================================
+
         code = generate_code(length=4)
 
         EmailCode.objects.create(
@@ -754,9 +768,24 @@ def reg(request):
 def confirm(request):
     # Если GET-запрос — показываем страницу
     if request.method == 'GET':
+        # Пытаемся получить user_id из сессии ИЛИ из GET-параметра
         user_id = request.session.get('pending_user_id')
+        
+        # Если в сессии нет, пробуем взять из URL
+        if not user_id:
+            user_id = request.GET.get('uid')
+            email = request.GET.get('email')
+            
+            if user_id:
+                # Сохраняем в сессию для последующих POST-запросов
+                request.session['pending_user_id'] = int(user_id)
+                if email:
+                    request.session['pending_user_email'] = email
+                request.session.modified = True
+                print(f"[CONFIRM GET] Restored user_id from URL: {user_id}")
+        
         print(f"[CONFIRM GET] Session key: {request.session.session_key}")
-        print(f"[CONFIRM GET] pending_user_id: {user_id}")
+        print(f"[CONFIRM GET] pending_user_id: {request.session.get('pending_user_id')}")
         return render(request, 'confirm.html')
     
     # Если POST-запрос — проверяем код
@@ -769,7 +798,7 @@ def confirm(request):
         print(f"[CONFIRM POST] Code: {code}")
 
         if not user_id:
-            # Пробуем восстановить по email
+            # Последняя попытка — пробуем найти пользователя по email из сессии
             email = request.session.get('pending_user_email')
             print(f"[CONFIRM POST] Trying email: {email}")
             
@@ -795,7 +824,7 @@ def confirm(request):
         try:
             user = User.objects.get(id=user_id)
             
-            # Проверяем время жизни
+            # Проверяем время жизни (4 минуты)
             time_since_creation = timezone.now() - user.date_joined
             print(f"[CONFIRM POST] Time since creation: {time_since_creation.total_seconds()}s")
             
@@ -857,71 +886,6 @@ def confirm(request):
             return JsonResponse({
                 'status': 'error',
                 'message': 'Ошибка сервера. Попробуйте позже.'
-            })
-
-    return render(request, 'confirm.html')
-
-
-def confirm_login(request):
-    if request.method == 'POST':
-        code = request.POST.get('email-code')
-        user_id = request.session.get('pending_login_user_id')
-        login_type = request.session.get('login_type', 'password_2fa')
-
-        if not user_id:
-            return JsonResponse({
-                'status': 'error',
-                'message': 'Сессия истекла'
-            })
-
-        try:
-            user = User.objects.get(id=user_id)
-            
-            # Выбираем тип кода в зависимости от типа входа
-            if login_type == "code":
-                code_type_filter = 'code_login'
-            else:
-                code_type_filter = 'login'
-            
-            email_code = EmailCode.objects.filter(
-                email=user.email,
-                code_type=code_type_filter
-            ).last()
-
-            if not email_code:
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'Код не найден'
-                })
-
-            if email_code.code != code:
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'Неверный код'
-                })
-
-            if email_code.is_expired():
-                email_code.delete()
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'Код истёк'
-                })
-
-            email_code.delete()
-            login(request, user)
-            del request.session['pending_login_user_id']
-            del request.session['login_type']
-
-            return JsonResponse({
-                'status': 'success',
-                'redirect': '/'
-            })
-
-        except Exception as e:
-            print("CONFIRM ERROR:", e)
-            return JsonResponse({
-                'status': 'error',
-                'message': str(e)
             })
 
     return render(request, 'confirm.html')
@@ -1033,3 +997,151 @@ def cleanup_unconfirmed_users():
 # Запускаем очистку в фоновом потоке при старте сервера
 cleanup_thread = threading.Thread(target=cleanup_unconfirmed_users, daemon=True)
 cleanup_thread.start()
+
+
+
+
+
+@login_required
+def logout_all_devices(request):
+    """Выход из аккаунта на всех устройствах"""
+    
+    # Получаем все сессии текущего пользователя
+    user_sessions = Session.objects.filter(
+        expire_date__gt=timezone.now()
+    )
+    
+    deleted_count = 0
+    
+    for session in user_sessions:
+        session_data = session.get_decoded()
+        # Если в сессии есть user_id текущего пользователя
+        if str(request.user.id) == str(session_data.get('_auth_user_id')):
+            session.delete()
+            deleted_count += 1
+    
+    # Выходим из текущей сессии
+    logout(request)
+    
+    messages.success(
+        request, 
+        f"Вы вышли из аккаунта на {deleted_count} устройстве(ах)"
+    )
+    
+    return redirect('auth')
+
+def confirm_login(request):
+    if request.method == 'POST':
+        code = request.POST.get('email-code')
+        user_id = request.session.get('pending_login_user_id')
+        login_type = request.session.get('login_type', 'password_2fa')
+
+        if not user_id:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Сессия истекла. Попробуйте войти заново.'
+            })
+
+        try:
+            user = User.objects.get(id=user_id)
+            
+            if login_type == "code":
+                code_type_filter = 'code_login'
+            else:
+                code_type_filter = 'login'
+            
+            email_code = EmailCode.objects.filter(
+                email=user.email,
+                code_type=code_type_filter
+            ).last()
+
+            if not email_code:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Код не найден. Запросите новый.'
+                })
+
+            if email_code.code != code:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Неверный код'
+                })
+
+            if email_code.is_expired():
+                email_code.delete()
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Код истёк. Запросите новый.'
+                })
+
+            email_code.delete()
+            login(request, user)
+            
+            request.session.pop('pending_login_user_id', None)
+            request.session.pop('login_type', None)
+
+            return JsonResponse({
+                'status': 'success',
+                'redirect': '/'
+            })
+
+        except User.DoesNotExist:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Пользователь не найден'
+            })
+        except Exception as e:
+            print("CONFIRM LOGIN ERROR:", e)
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Ошибка сервера. Попробуйте позже.'
+            })
+
+    return render(request, 'confirm_login.html')  # ← использует новый шаблон
+
+
+from django.contrib import messages
+from django.utils import timezone
+from datetime import datetime, date
+
+@login_required
+def questions_view(request):
+    # Получаем вопросы пользователей (только видимые)
+    user_questions = Question.objects.filter(is_visible=True).order_by('-created_at')
+    
+    # Подсчёт вопросов пользователя за сегодня
+    today = timezone.now().date()
+    questions_today = Question.objects.filter(
+        author=request.user,
+        created_at__date=today
+    ).count()
+    
+    if request.method == 'POST':
+        question_text = request.POST.get('question_text')
+        
+        if not question_text or not question_text.strip():
+            messages.error(request, "Вопрос не может быть пустым")
+            return redirect('questions')
+        
+        # Проверка лимита: максимум 2 вопроса в день
+        if questions_today >= 2:
+            messages.error(request, "Вы превысили лимит вопросов на сегодня (максимум 2 вопроса в день)")
+            return redirect('questions')
+        
+        # Создаём вопрос
+        Question.objects.create(
+            author=request.user,
+            text=question_text.strip(),
+            is_answered=False,
+            is_visible=True  # Сразу виден на сайте
+        )
+        
+        messages.success(request, f"Ваш вопрос отправлен! Осталось вопросов на сегодня: {1 - questions_today}")
+        return redirect('questions')
+    
+    context = {
+        'questions': user_questions,
+        'user_questions': user_questions,  # для совместимости
+        'questions_today': questions_today,
+    }
+    return render(request, 'questions.html', context)

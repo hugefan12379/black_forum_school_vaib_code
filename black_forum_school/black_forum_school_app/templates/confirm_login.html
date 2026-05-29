@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Подтверждение входа — неофициальный сайт РВ{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href={% static 'css/header.css' %}>
+<link rel="stylesheet" href={% static 'css/reg.css' %}>
+{% endblock %}
+
+{% block content %}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            
+            <div class="auth-card p-4 p-md-5 rounded-3">
+                
+                <h2 class="text-center mb-4 text-light">🔐 Подтверждение входа</h2>
+                
+                <div class="text-center mb-4">
+                    <p class="text-muted">
+                        Код подтверждения отправлен на вашу почту
+                    </p>
+                    <small class="text-secondary">Введите код из письма (действителен 4 минуты)</small>
+                </div>
+                
+                <div id="error-container" class="d-none mb-3"></div>
+                <div id="success-container" class="d-none mb-3"></div>
+                
+                <form id="confirm-form">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label for="email-code" class="form-label text-light">
+                            Код подтверждения
+                        </label>
+                        <input
+                            type="text"
+                            id="email-code"
+                            name="email-code"
+                            class="form-control bg-dark text-light border-secondary text-center"
+                            placeholder="Введите код"
+                            maxlength="6"
+                            required
+                            autocomplete="off"
+                            style="font-size: 24px; letter-spacing: 4px;"
+                        >
+                    </div>
+                    
+                    <button
+                        type="submit"
+                        id="confirm-button"
+                        class="btn btn-primary w-100 py-2 mb-3"
+                    >
+                        ✅ Подтвердить
+                    </button>
+                    
+                    <div class="text-center mt-3">
+                        <a href="/auth/" class="text-info text-decoration-none">
+                            ← Назад ко входу
+                        </a>
+                    </div>
+                </form>
+                
+                <hr class="bg-secondary my-4">
+                
+                <div class="text-center">
+                    <p class="text-muted small mb-0">
+                        Не пришёл код? <a href="/auth/" class="text-info">Попробуйте войти снова</a>
+                    </p>
+                </div>
+                
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<!-- NEWS SECTION (как на главной) -->
+<div class="container my-5">
+    <h2 class="mb-4">📢 Руководство</h2>
+
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="news-card">
+                <h5>📰 Форум</h5>
+                <p>Смотрите и публикуйте статьи, оставляйте комментарии</p>
+                <small class="text-secondary">пишите до 1 статьи в день, не имея привилегий</small>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="news-card">
+                <h5>💬 Общий чат</h5>
+                <p>Общайся со школой, делись общими новостями</p>
+                <small class="text-secondary">не оскорбляйте друг друга и не кидайте 18+ контент</small>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="news-card">
+                <h5>🎭 Мафия</h5>
+                <p>Играйте в мафию с друзьями онлайн (даже без звонка) и на переменах</p>
+                <small class="text-secondary">запрещено палить другую мафию без согласия, играйте без токсичности</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    
+    $('#confirm-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        const code = $('#email-code').val().trim();
+        
+        if (!code) {
+            $('#error-container')
+                .html('<div class="alert alert-danger">❌ Введите код</div>')
+                .removeClass('d-none');
+            return;
+        }
+        
+        $('#confirm-button').prop('disabled', true).text('Проверка...');
+        $('#error-container').addClass('d-none').empty();
+        $('#success-container').addClass('d-none').empty();
+        
+        $.ajax({
+            url: '/confirm-login/',
+            type: 'POST',
+            data: $(this).serialize(),
+            dataType: 'json',
+            success: function(response) {
+                if (response.status === 'success') {
+                    $('#success-container')
+                        .html('<div class="alert alert-success">✅ Успешный вход! Перенаправление...</div>')
+                        .removeClass('d-none');
+                    
+                    setTimeout(function() {
+                        window.location.href = response.redirect || '/';
+                    }, 500);
+                } else {
+                    $('#error-container')
+                        .html('<div class="alert alert-danger">❌ ' + 
+                            (response.message || 'Ошибка') + 
+                        '</div>')
+                        .removeClass('d-none');
+                    $('#confirm-button').prop('disabled', false).text('✅ Подтвердить');
+                }
+            },
+            error: function(xhr) {
+                let message = 'Ошибка сервера';
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.message) message = response.message;
+                } catch(e) {}
+                
+                $('#error-container')
+                    .html('<div class="alert alert-danger">❌ ' + message + '</div>')
+                    .removeClass('d-none');
+                $('#confirm-button').prop('disabled', false).text('✅ Подтвердить');
+            }
+        });
+    });
+    
+});
+</script>
+
+{% endblock %}
+
+{% include 'footer.html' %}

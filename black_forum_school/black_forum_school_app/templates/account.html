@@ -45,7 +45,22 @@
             <!-- Кнопка сохранения -->
             <button type="submit" class="btn btn-dark" id="save-button" style="display: block; margin-top: 20px;">Сохранить</button>
         </form>
+
+        <!-- ========== ДОБАВЛЕНА КНОПКА ВЫХОДА СО ВСЕХ УСТРОЙСТВ ========== -->
+        <div style="margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px;">
+            <form action="{% url 'logout_all' %}" method="POST" onsubmit="return confirm('Вы уверены? Вы выйдете из аккаунта на ВСЕХ устройствах (телефон, другой браузер, компьютер и т.д.)');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger" style="width: 100%;">
+                    ⚠️ Выйти на всех устройствах
+                </button>
+            </form>
+            <p style="font-size: 12px; color: #888; margin-top: 8px; text-align: center;">
+                После этого потребуется повторный вход на всех устройствах
+            </p>
+        </div>
+        <!-- ================================================================ -->
     </main>   
+
 {% endblock %}
 
 {% block js %}

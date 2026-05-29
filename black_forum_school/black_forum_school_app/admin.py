@@ -69,3 +69,5 @@ class ChatMessageAdmin(admin.ModelAdmin):
         return bool(obj.file)
     has_file.boolean = True
     has_file.short_description = "Файл"
+
+    

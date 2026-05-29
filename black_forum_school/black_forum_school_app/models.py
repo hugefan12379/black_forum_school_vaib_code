@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User  # Этот импорт уже должен быть в начале файла
+from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
 
@@ -74,7 +74,6 @@ class ForumPost(models.Model):
     description = models.TextField(max_length=500)
     content = models.TextField()
 
-    # ManyToMany поле для множественного выбора тем
     topics = models.ManyToManyField(
         Topic,
         blank=True,
@@ -108,7 +107,6 @@ class ForumPost(models.Model):
         return self.title
     
     def get_topics_list(self):
-        """Возвращает список тем для шаблона"""
         return self.topics.all()
 
 
@@ -149,7 +147,6 @@ class Article(models.Model):
         null=True
     )
     
-    # ManyToMany поле для множественного выбора тем
     topics = models.ManyToManyField(
         Topic,
         blank=True,
@@ -168,60 +165,49 @@ class Article(models.Model):
         return self.title
     
     def get_topics_list(self):
-        """Возвращает список тем для шаблона"""
         return self.topics.all()
 
 
 # =========================
-# ВОПРОСЫ (ДОБАВЛЕНО)
+# ВОПРОСЫ (ИСПРАВЛЕНО)
 # =========================
 class Question(models.Model):
     author = models.ForeignKey(
         User, 
         on_delete=models.CASCADE, 
         verbose_name='Автор',
-        related_name='forum_questions'  # ← ИЗМЕНИТЕ ЗДЕСЬ
+        related_name='forum_questions'
     )
-    # ... остальные поля
     text = models.TextField(verbose_name="Текст вопроса")
-    is_answered = models.BooleanField(
-        default=False, 
-        verbose_name="Есть ответ"
-    )
-    is_visible = models.BooleanField(
-        default=False, 
-        verbose_name="Виден на сайте",
-        help_text="Только после модерации"
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="Дата создания"
-    )
+    answer = models.TextField(blank=True, null=True, verbose_name="Ответ администрации")
+    answered_at = models.DateTimeField(blank=True, null=True, verbose_name="Дата ответа")
+    is_answered = models.BooleanField(default=False, verbose_name="Есть ответ")
+    is_visible = models.BooleanField(default=True, verbose_name="Виден на сайте")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
 
     class Meta:
         verbose_name = "Вопрос"
         verbose_name_plural = "Вопросы"
-        ordering = ['-created_at']  # Сначала новые вопросы
+        ordering = ['-created_at']
 
     def __str__(self):
         return f"Вопрос от {self.author.username}: {self.text[:50]}"
-    
+
+
+# =========================
+# ПОДПИСКА НА РАССЫЛКУ
+# =========================
 class EmailDigest(models.Model):
     email = models.EmailField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f'{self.email}'
-    
-    def is_expired(self):
-        return timezone.now() > self.created_at + timedelta(minutes=30)
-    
-    
-    from django.db import models
-from django.contrib.auth.models import User
 
-from django.utils import timezone
-from datetime import timedelta
 
+# =========================
+# КОДЫ ПОДТВЕРЖДЕНИЯ
+# =========================
 class EmailCode(models.Model):
     email = models.EmailField()
     code = models.CharField(max_length=6)
@@ -229,13 +215,31 @@ class EmailCode(models.Model):
     code_type = models.CharField(max_length=20, default='login')
     
     def is_expired(self):
-        """Код действителен 240 секунд (4 минуты)"""
         expiration_time = self.created_at + timedelta(seconds=240)
         return timezone.now() > expiration_time 
     
+    def __str__(self):
+        return f"{self.email} - {self.code} ({self.code_type})"
 
+
+# =========================
+# ПРОФИЛЬ
+# =========================
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-
     two_factor_enabled = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"Профиль {self.user.username}"
+
+
+
+class EmailDigest(models.Model):
+    email = models.EmailField()
+    created_at = models.DateTimeField(auto_now_add=True)  # ← только auto_now_add, без default
+
+    def __str__(self):
+        return f'{self.email}'
     
+    def is_expired(self):
+        return timezone.now() > self.created_at + timedelta(minutes=30)
